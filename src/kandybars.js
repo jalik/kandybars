@@ -240,7 +240,7 @@
         return source.replace(pattern, function (match, block, html) {
             var value = Kandybars.resolvePath(block, context, parent);
 
-            if (value !== null) {
+            if (value != null) {
                 if (value instanceof Array) {
                     var list = '';
 
@@ -280,7 +280,7 @@
      */
     Kandybars.replaceConditions = function (source, context, parent) {
         var pattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
-        var varPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;
+        var varPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;//todo support parent (../)
 
         return source.replace(pattern, function (match, condition, html, html2) {
             var result = false;
@@ -312,13 +312,10 @@
             args = args.split(' ');
 
             for (var i = 0; i < args.length; i += 1) {
-                var arg = args[i];
+                args[i] = Kandybars.resolveValue(args[i], context, parent);
 
-                if (arg.match(/^(["'])[^'"]+?\1$/)) {
-                    args[i] = arg.substring(1, arg.length - 1);
-                }
-                else {
-                    args[i] = Kandybars.resolvePath(arg, context, parent);
+                if (/^(["'])[^\1]+?\1$/.test(args[i])) {
+                    args[i] = args[i].substring(1, args[i].length - 1);
                 }
             }
 
@@ -331,7 +328,7 @@
     };
 
     /**
-     * Resplces all partials in the source
+     * Replaces all partials in the source
      *
      * @param source
      * @param context
@@ -344,15 +341,17 @@
         return source.replace(pattern, function (match, partial) {
             if (templates[partial]) {
                 var partialId = new Date().getTime();
+
                 partials[partialId] = {
                     source: source,
                     context: context,
                     parent: parent,
                     name: partial
                 };
+
                 var result = Kandybars.render(partial, context, {parent: parent});
                 result.attr('data-partial-id', partialId);
-//                console.log(result);todo
+
                 return result && result[0] ? result[0].outerHTML : '';
             }
             throw 'Partial `' + partial + '` does not exist';
@@ -368,13 +367,13 @@
      * @return {string}
      */
     Kandybars.replaceVars = function (source, context, parent) {
-        var pattern = /\{\{([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
+        var pattern = /\{\{((?:\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
 
         return source.replace(pattern, function (match, variable) {
             var value = Kandybars.resolvePath(variable, context, parent);
             var type = typeof value;
 
-            if (value !== null) {
+            if (value != null) {
                 if (type === 'string' || type === 'number') {
                     return value;
                 }
@@ -392,9 +391,12 @@
      *
      * @param name
      * @param data
+     * @param options
      * @return {jQuery}
      */
-    Kandybars.render = function (name, data) {
+    Kandybars.render = function (name, data, options) {
+        var bench = new Date().getTime();
+
         if (!templates[name]) {
             throw('The template `' + name + '` does not exist');
         }
@@ -410,12 +412,18 @@
         var helpers = $.extend(true, {}, data, template._helpers);
 
         // Define default options
-        var options = {
+        options = $.extend(true, {
             events: template._events,
             rendered: template.rendered,
-            name: name
-        };
-        return Kandybars.renderHTML(source, helpers, options);
+            name: name,
+            parent: null
+        }, options);
+
+        var html = Kandybars.renderHTML(source, helpers, options);
+
+//        console.log(name + ' generated in ' + (new Date().getTime() - bench) + ' ms');
+
+        return html;
     };
 
     /**
@@ -427,16 +435,12 @@
      * @returns {jQuery}
      */
     Kandybars.renderHTML = function (source, data, options) {
-        var bench = new Date().getTime();
-
         options = options || {
             parent: null,
             name: null
         };
 
         source = Kandybars.replaceAll(source, data, options.parent);
-
-//        console.log('generated in ' + (new Date().getTime() - bench) + ' ms');
 
         var tpl;
 
@@ -445,7 +449,7 @@
 
         // Execute the general callback
         if (typeof Kandybars.rendered === 'function') {
-            Kandybars.rendered.call(tpl);
+            Kandybars.rendered.call(tpl, data);
         }
 
         for (var partialId in partials) {
@@ -462,11 +466,11 @@
                                 var fn = evts[event];
 
                                 if (typeof fn === 'function') {
-                                    var separatorIndex = event.indexOf(' ');
-                                    var action = event.substr(0, separatorIndex);
-                                    var target = event.substr(separatorIndex + 1);
+                                    var eventParts = event.split(' ', 2);
+                                    var action = eventParts[0];
+                                    var target = eventParts[1] ? tpl.find(eventParts[1]) : tpl;
 
-                                    tpl.find(target).on(action, function (ev) {
+                                    target.on(action, function (ev) {
                                         fn.call(ctx, ev, tpl);
                                     });
                                 }
@@ -480,7 +484,7 @@
         if (options) {
             // Exécute la méthode rendered
             if (typeof options.rendered === 'function') {
-                options.rendered.call(tpl);
+                options.rendered.call(tpl, data);
             }
 
             // Ajout de la couche évènementielle
@@ -491,11 +495,11 @@
                             var fn = events[event];
 
                             if (typeof fn === 'function') {
-                                var separatorIndex = event.indexOf(' ');
-                                var action = event.substr(0, separatorIndex);
-                                var target = event.substr(separatorIndex + 1);
+                                var eventParts = event.split(' ', 2);
+                                var action = eventParts[0];
+                                var target = eventParts[1] ? tpl.find(eventParts[1]) : tpl;
 
-                                tpl.find(target).on(action, function (ev) {
+                                target.on(action, function (ev) {
                                     fn.call(data, ev, tpl);
                                 });
                             }
@@ -516,33 +520,32 @@
      * @return {*}
      */
     Kandybars.resolvePath = function (path, context, parent) {
-        if (path === 'this') {
-            return context;
-        }
+        if (path != null && context != null) {
+            if (path === 'this') {
+                return context;
+            }
 
-        var obj;
+            var obj = context;
 
-        if (path.match(/^\.\.\//)) {
-            obj = parent;
-            path = path.substring(3);
-        }
-        else {
-            obj = context;
-        }
+            if (/^\.\.\//.test(path)) {
+                obj = parent;
+                path = path.substring(3);
+            }
+            else if (/^this\./.test(path)) {
+                obj = context;
+                path = path.substring(5);
+            }
 
-        var parts = path.split('.');
-        var depth = parts.length;
+            if (obj != null) {
+                var parts = path.split('.');
+                var depth = parts.length;
 
-        if (obj !== null) {
-            for (var i = 0; i < depth; i += 1) {
-                if (parts[i] !== 'this') {
-                    if (obj !== null && obj.hasOwnProperty(parts[i])) {
+                for (var i = 0; i < depth; i += 1) {
+                    if (obj != null && obj.hasOwnProperty(parts[i])) {
                         obj = obj[parts[i]];
 
-                        if (obj !== null) {
-                            if (typeof obj === 'function') {
-                                obj = obj.call(context);
-                            }
+                        if (obj != null && typeof obj === 'function') {
+                            obj = obj.call(context);
                         }
                     }
                     else {
@@ -550,9 +553,10 @@
                         break;
                     }
                 }
+                return obj;
             }
         }
-        return obj;
+        return null;
     };
 
     /**
@@ -564,7 +568,10 @@
      * @return {*}
      */
     Kandybars.resolveValue = function (value, context, parent) {
-        if (value !== null) {
+        if (value != null) {
+            if (/^(['"'])[^\1]+?\1$/.test(value)) {
+                return value;
+            }
             if (/^true$/i.test(value)) {
                 return true;
             }
@@ -583,23 +590,22 @@
 
             value = Kandybars.resolvePath(value, context, parent);
 
-            if (/^true$/i.test(value)) {
-                return true;
-            }
-            if (/^false$/i.test(value)) {
-                return false;
-            }
-            if (reservedWords.indexOf(value) != -1) {
-                return value;
-            }
-            if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
-                return parseInt(value);
-            }
-            if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
-                return parseFloat(value);
-            }
-            if (value !== null) {
-                value = '"' + value + '"';
+            if (value != null) {
+                if (/^true$/i.test(value)) {
+                    return true;
+                }
+                if (/^false$/i.test(value)) {
+                    return false;
+                }
+                if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
+                    return parseInt(value);
+                }
+                if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
+                    return parseFloat(value);
+                }
+                if (typeof value === 'string') {
+                    value = '"' + value.replace('"', '\\"') + '"';
+                }
             }
         }
         return value;
