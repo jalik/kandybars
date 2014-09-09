@@ -255,13 +255,43 @@
      */
     Kandybars.parseValue = function (value, context, parent) {
         if (value != null) {
-            var tmp = Kandybars.resolvePath(value, context, parent);
-
-            if (tmp != null) {
-                return tmp;
+            if (/^(['"'])[^\1]+?\1$/.test(value)) {
+                return value;
+            }
+            if (/^true$/i.test(value)) {
+                return true;
+            }
+            if (/^false$/i.test(value)) {
+                return false;
             }
             if (reservedWords.indexOf(value) != -1) {
                 return value;
+            }
+            if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
+                return parseInt(value);
+            }
+            if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
+                return parseFloat(value);
+            }
+
+            value = Kandybars.resolvePath(value, context, parent);
+
+            if (value != null) {
+                if (/^true$/i.test(value)) {
+                    return true;
+                }
+                if (/^false$/i.test(value)) {
+                    return false;
+                }
+                if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
+                    return parseInt(value);
+                }
+                if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
+                    return parseFloat(value);
+                }
+                if (typeof value === 'string') {
+                    value = '"' + value.replace('"', '\\"') + '"';
+                }
             }
         }
         return value;
@@ -377,11 +407,12 @@
             args = args.split(' ');
 
             for (var i = 0; i < args.length; i += 1) {
-                args[i] = Kandybars.parseValue(args[i], context, parent);
+                var value = Kandybars.parseValue(args[i], context, parent);
 
-                if (/^(["'])[^\1]+?\1$/.test(args[i])) {
-                    args[i] = args[i].substring(1, args[i].length - 1);
+                if (/^(["'])[^\1]+?\1$/.test(value)) {
+                    value = value.substring(1, value.length - 1);
                 }
+                args[i] = value;
             }
 
             if (Kandybars.helpers[helper]) {
@@ -433,7 +464,7 @@
             var type = typeof value;
 
             if (value != null) {
-                if (type === 'string' || type === 'number') {
+                if (type === 'string' || type === 'number' || type === 'boolean') {
                     return value;
                 }
                 else if (type === 'object') {
