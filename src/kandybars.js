@@ -41,8 +41,26 @@
         'while', 'with', 'yield'];
 
 
-    var templates = {};
+    // Patterns
+    var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
+    var commentPattern = /\{\{\![^}]+?\}\}/g;
+    var conditionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
+    var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
+    var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
+    var partialPattern = /\{\{> ([^}]+)\}\}/g;
+    var regExpPattern = /([.*+?^${}()|\[\]\/\\])/g;
+    var templatePattern = /<template[^>]*>([\s\S]*?)<\/template>/g;
+    var templateNamePattern = /name="([^"]+)"/;
+    var templateTagsPattern = /<template[^>]*>|<\/template>|/g;
+    var valuePattern = /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;
+    var varPattern = /\{\{((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
+
+
+    var compiledPartials = {};
+    var compiledTemplates = {};
     var partials = {};
+    var partialId = 0;
+    var templates = {};
 
 
     /**
@@ -123,6 +141,15 @@
     };
 
     /**
+     * Compile the source
+     * @param source
+     * @return {function}
+     */
+    Kandybars.compile = function (source) {
+        // todo
+    };
+
+    /**
      * Creates and register a new template
      * @param name
      * @param source
@@ -144,13 +171,13 @@
             cache: false,
             success: function (html) {
                 // Scans template tags
-                var models = html.match(/<template[^>]*>([\s\S]*?)<\/template>/g);
+                var models = html.match(templatePattern);
 
                 for (var i in models) {
                     if (models.hasOwnProperty(i)) {
                         var model = models[i];
-                        var name = model.match(/name="([^"]+)"/)[1];
-                        var source = model.replace(/<template[^>]*>|<\/template>|/g, '');
+                        var name = model.match(templateNamePattern)[1];
+                        var source = model.replace(templateTagsPattern, '');
 
                         // Creates the template
                         Kandybars.create(name, source);
@@ -183,12 +210,65 @@
      * @return {XML|string|void}
      */
     function escapeRegExp(string) {
-        return string.replace(/([.*+?^${}()|\[\]\/\\])/g, '\\$1');
+        return string.replace(regExpPattern, '\\$1');
     }
 
     /**
+     * Parses and attach the event to the corresponding elements
+     * in the template
+     * @param event
+     * @param fn
+     * @param context
+     * @param tpl
+     */
+    Kandybars.parseEvent = function (event, fn, context, tpl) {
+        if (typeof fn === 'function') {
+            var parts = event.split(' ', 2);
+            var action = parts[0];
+            var target = parts[1] ? tpl.find(parts[1]) : tpl;
+            target.on(action, function (ev) {
+                fn.call(context, ev, tpl);
+            });
+        }
+    };
+
+    /**
+     * Parses all events in the template
+     * @param events
+     * @param context
+     * @param tpl
+     */
+    Kandybars.parseEvents = function (events, context, tpl) {
+        for (var event in events) {
+            if (events.hasOwnProperty(event)) {
+                Kandybars.parseEvent(events[event]);
+            }
+        }
+    };
+
+    /**
+     * Returns the parsed value
+     * @param value
+     * @param context
+     * @param parent
+     * @return {*}
+     */
+    Kandybars.parseValue = function (value, context, parent) {
+        if (value != null) {
+            var tmp = Kandybars.resolvePath(value, context, parent);
+
+            if (tmp != null) {
+                return tmp;
+            }
+            if (reservedWords.indexOf(value) != -1) {
+                return value;
+            }
+        }
+        return value;
+    };
+
+    /**
      * Registers a helper
-     *
      * @param name
      * @param callback
      */
@@ -197,7 +277,7 @@
     };
 
     /**
-     *
+     * Replaces all dynamic elements in the source
      * @param source
      * @param context
      * @param parent
@@ -228,16 +308,13 @@
     /**
      * Replaces all blocks in the source
      * todo support nested blocks
-     *
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceBlocks = function (source, context, parent) {
-        var pattern = /\{\{\#each ([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
-
-        return source.replace(pattern, function (match, block, html) {
+        return source.replace(blockPattern, function (match, block, html) {
             var value = Kandybars.resolvePath(block, context, parent);
 
             if (value != null) {
@@ -258,40 +335,31 @@
 
     /**
      * Replaces all comments in the source
-     *
      * @param source
      * @param context
      * @return {string}
      */
     Kandybars.replaceComments = function (source, context) {
-        var pattern = /\{\{\![^}]+?\}\}/g;
-
-        return source.replace(pattern, '');
+        return source.replace(commentPattern, '');
     };
 
     /**
      * Replaces all conditions in the source
      * todo support nested conditions
-     *
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceConditions = function (source, context, parent) {
-        var pattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
-        var varPattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;//todo support parent (../)
-
-        return source.replace(pattern, function (match, condition, html, html2) {
+        return source.replace(conditionPattern, function (match, condition, html, html2) {
             var result = false;
 
-            condition = condition.replace(varPattern, function (match, variable) {
-                return Kandybars.resolveValue(variable, context, parent);
+            condition = condition.replace(valuePattern, function (match, variable) {
+                return Kandybars.parseValue(variable, context, parent);
             });
 
-            (function () {
-                eval('result = ( ' + condition + ' );');
-            })();
+            result = evalCondition(condition);
 
             return result ? html : html2;
         });
@@ -299,20 +367,17 @@
 
     /**
      * Replaces all helpers in the source
-     *
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceHelpers = function (source, context, parent) {
-        var pattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
-
-        return source.replace(pattern, function (match, helper, args) {
+        return source.replace(helperPattern, function (match, helper, args) {
             args = args.split(' ');
 
             for (var i = 0; i < args.length; i += 1) {
-                args[i] = Kandybars.resolveValue(args[i], context, parent);
+                args[i] = Kandybars.parseValue(args[i], context, parent);
 
                 if (/^(["'])[^\1]+?\1$/.test(args[i])) {
                     args[i] = args[i].substring(1, args[i].length - 1);
@@ -329,18 +394,15 @@
 
     /**
      * Replaces all partials in the source
-     *
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replacePartials = function (source, context, parent) {
-        var pattern = /\{\{> ([^}]+)\}\}/;
-
-        return source.replace(pattern, function (match, partial) {
+        return source.replace(partialPattern, function (match, partial) {
             if (templates[partial]) {
-                var partialId = new Date().getTime();
+                partialId += 1;
 
                 partials[partialId] = {
                     source: source,
@@ -360,16 +422,13 @@
 
     /**
      * Replaces all variables in the source
-     *
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceVars = function (source, context, parent) {
-        var pattern = /\{\{((?:\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
-
-        return source.replace(pattern, function (match, variable) {
+        return source.replace(varPattern, function (match, variable) {
             var value = Kandybars.resolvePath(variable, context, parent);
             var type = typeof value;
 
@@ -388,7 +447,6 @@
 
     /**
      * Returns the template generated with data
-     *
      * @param name
      * @param data
      * @param options
@@ -419,16 +477,11 @@
             parent: null
         }, options);
 
-        var html = Kandybars.renderHTML(source, helpers, options);
-
-//        console.log(name + ' generated in ' + (new Date().getTime() - bench) + ' ms');
-
-        return html;
+        return Kandybars.renderHTML(source, helpers, options);
     };
 
     /**
-     * Génère un template à partir de code HTML
-     *
+     * Generate a template form HTML source
      * @param source
      * @param data
      * @param options
@@ -460,52 +513,17 @@
 
                 if (partialTpl && partialTpl.length > 0) {
                     var events = template._events;
-                    for (var event in events) {
-                        if (events.hasOwnProperty(event)) {
-                            (function (evts, ctx, tpl) {
-                                var fn = evts[event];
-
-                                if (typeof fn === 'function') {
-                                    var eventParts = event.split(' ', 2);
-                                    var action = eventParts[0];
-                                    var target = eventParts[1] ? tpl.find(eventParts[1]) : tpl;
-
-                                    target.on(action, function (ev) {
-                                        fn.call(ctx, ev, tpl);
-                                    });
-                                }
-                            })(events, partial.context, partialTpl);
-                        }
-                    }
+                    Kandybars.parseEvents(events, partial.context, partialTpl);
                 }
             }
         }
 
         if (options) {
-            // Exécute la méthode rendered
             if (typeof options.rendered === 'function') {
                 options.rendered.call(tpl, data);
             }
-
-            // Ajout de la couche évènementielle
             if (options.events) {
-                for (var event in options.events) {
-                    if (options.events.hasOwnProperty(event)) {
-                        (function (events) {
-                            var fn = events[event];
-
-                            if (typeof fn === 'function') {
-                                var eventParts = event.split(' ', 2);
-                                var action = eventParts[0];
-                                var target = eventParts[1] ? tpl.find(eventParts[1]) : tpl;
-
-                                target.on(action, function (ev) {
-                                    fn.call(data, ev, tpl);
-                                });
-                            }
-                        })(options.events);
-                    }
-                }
+                Kandybars.parseEvents(options.events, data, tpl);
             }
         }
         return tpl;
@@ -513,7 +531,6 @@
 
     /**
      * Returns the value of a path
-     *
      * @param path
      * @param context
      * @param parent
@@ -521,17 +538,20 @@
      */
     Kandybars.resolvePath = function (path, context, parent) {
         if (path != null && context != null) {
+            if (!pathPattern.test(path)) {
+                return null;
+            }
             if (path === 'this') {
                 return context;
             }
 
             var obj = context;
 
-            if (/^\.\.\//.test(path)) {
+            if (path.indexOf('../') == 0) {
                 obj = parent;
                 path = path.substring(3);
             }
-            else if (/^this\./.test(path)) {
+            else if (path.indexOf('this.') == 0) {
                 obj = context;
                 path = path.substring(5);
             }
@@ -560,56 +580,15 @@
     };
 
     /**
-     * Returns the value parsed
-     *
-     * @param value
-     * @param context
-     * @param parent
+     * Returns the value of the condition
+     * @param condition
      * @return {*}
      */
-    Kandybars.resolveValue = function (value, context, parent) {
-        if (value != null) {
-            if (/^(['"'])[^\1]+?\1$/.test(value)) {
-                return value;
-            }
-            if (/^true$/i.test(value)) {
-                return true;
-            }
-            if (/^false$/i.test(value)) {
-                return false;
-            }
-            if (reservedWords.indexOf(value) != -1) {
-                return value;
-            }
-            if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
-                return parseInt(value);
-            }
-            if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
-                return parseFloat(value);
-            }
-
-            value = Kandybars.resolvePath(value, context, parent);
-
-            if (value != null) {
-                if (/^true$/i.test(value)) {
-                    return true;
-                }
-                if (/^false$/i.test(value)) {
-                    return false;
-                }
-                if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
-                    return parseInt(value);
-                }
-                if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
-                    return parseFloat(value);
-                }
-                if (typeof value === 'string') {
-                    value = '"' + value.replace('"', '\\"') + '"';
-                }
-            }
-        }
-        return value;
-    };
+    function evalCondition(condition) {
+        var _result_;
+        eval('_result_ = ( ' + condition + ' );');
+        return _result_;
+    }
 
     window.Kandybars = Kandybars;
 
