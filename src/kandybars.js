@@ -44,7 +44,7 @@
     // Patterns
     var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
     var commentPattern = /\{\{\![^}]+?\}\}/g;
-    var conditionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
+    var expressionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
     var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
     var partialPattern = /\{\{> ([^}]+)\}\}/g;
@@ -56,8 +56,6 @@
     var varPattern = /\{\{((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
 
 
-    var compiledPartials = {};
-    var compiledTemplates = {};
     var partials = {};
     var partialId = 0;
     var templates = {};
@@ -72,18 +70,22 @@
     var Kandybars = {};
 
     /**
-     * The base path of all templates
-     * @type {string}
+     * Enable or disable the use of cache
+     * @type {boolean}
      */
-    Kandybars.basePath = 'pages';
+    Kandybars.cache = true;
 
+    /**
+     * The built-in helpers
+     * @type {{}}
+     */
     Kandybars.helpers = {};
 
     /**
-     * The rendered callback
-     * @type {function}
+     * The base path of all templates
+     * @type {string}
      */
-    Kandybars.rendered = null;
+    Kandybars.rootDir = 'pages';
 
     /**
      * The error handler
@@ -133,20 +135,11 @@
 
     /**
      * Returns the generated version of the template using data
-     * @param data
+     * @param context
      * @return {jQuery}
      */
-    Kandybars.Template.prototype.render = function (data) {
-        return Kandybars.render(this.name, data);
-    };
-
-    /**
-     * Compile the source
-     * @param source
-     * @return {function}
-     */
-    Kandybars.compile = function (source) {
-        // todo
+    Kandybars.Template.prototype.render = function (context) {
+        return Kandybars.render(this.name, context, null);
     };
 
     /**
@@ -166,29 +159,27 @@
      */
     Kandybars.load = function (path, callback) {
         $.ajax({
-            url: Kandybars.basePath + '/' + path + '/page.html',
+            url: Kandybars.rootDir + '/' + path + '/page.html',
             dataType: 'html',
-            cache: false,
+            cache: Kandybars.cache,
             success: function (html) {
                 // Scans template tags
                 var models = html.match(templatePattern);
 
-                for (var i in models) {
-                    if (models.hasOwnProperty(i)) {
-                        var model = models[i];
-                        var name = model.match(templateNamePattern)[1];
-                        var source = model.replace(templateTagsPattern, '');
+                for (var i = 0; i < models.length; i += 1) {
+                    var model = models[i];
+                    var name = model.match(templateNamePattern)[1];
+                    var source = model.replace(templateTagsPattern, '');
 
-                        // Creates the template
-                        Kandybars.create(name, source);
-                    }
+                    // Creates the template
+                    Kandybars.create(name, source);
                 }
 
                 if (models && models.length > 0) {
                     $.ajax({
-                        url: Kandybars.basePath + '/' + path + '/script.js',
+                        url: Kandybars.rootDir + '/' + path + '/script.js',
                         dataType: 'script',
-                        cache: false,
+                        cache: Kandybars.cache,
                         complete: function (response) {
                             if (typeof callback === 'function') {
                                 callback.call(templates[name]);
@@ -337,24 +328,21 @@
 
     /**
      * Replaces all blocks in the source
-     * todo support nested blocks
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceBlocks = function (source, context, parent) {
-        return source.replace(blockPattern, function (match, block, html) {
-            var value = Kandybars.resolvePath(block, context, parent);
+        return source.replace(blockPattern, function (match, path, html) {
+            var value = Kandybars.resolvePath(path, context, parent);
 
             if (value != null) {
                 if (value instanceof Array) {
                     var list = '';
 
-                    for (var i in value) {
-                        if (value.hasOwnProperty(i)) {
-                            list += Kandybars.replaceAll(html, value[i], context);
-                        }
+                    for (var i = 0; i < value.length; i += 1) {
+                        list += Kandybars.replaceAll(html, value[i], context);
                     }
                     return list;
                 }
@@ -366,23 +354,21 @@
     /**
      * Replaces all comments in the source
      * @param source
-     * @param context
      * @return {string}
      */
-    Kandybars.replaceComments = function (source, context) {
+    Kandybars.replaceComments = function (source) {
         return source.replace(commentPattern, '');
     };
 
     /**
      * Replaces all conditions in the source
-     * todo support nested conditions
      * @param source
      * @param context
      * @param parent
      * @return {string}
      */
     Kandybars.replaceConditions = function (source, context, parent) {
-        return source.replace(conditionPattern, function (match, condition, html, html2) {
+        return source.replace(expressionPattern, function (match, condition, html, html2) {
             var result = false;
 
             condition = condition.replace(valuePattern, function (match, variable) {
@@ -391,7 +377,7 @@
 
             result = evalCondition(condition);
 
-            return result ? html : html2;
+            return Kandybars.replaceAll(result ? html : html2, context, parent);
         });
     };
 
@@ -403,7 +389,7 @@
      * @return {string}
      */
     Kandybars.replaceHelpers = function (source, context, parent) {
-        return source.replace(helperPattern, function (match, helper, args) {
+        return source.replace(helperPattern, function (match, name, args) {
             args = args.split(' ');
 
             for (var i = 0; i < args.length; i += 1) {
@@ -415,11 +401,11 @@
                 args[i] = value;
             }
 
-            if (Kandybars.helpers[helper]) {
-                var result = Kandybars.helpers[helper].apply(context, args);
+            if (Kandybars.helpers[name]) {
+                var result = Kandybars.helpers[name].apply(context, args);
                 return result !== undefined ? result : '';
             }
-            throw 'Helper `' + helper + '` does not exist';
+            throw 'Helper `' + name + '` does not exist';
         });
     };
 
@@ -431,23 +417,31 @@
      * @return {string}
      */
     Kandybars.replacePartials = function (source, context, parent) {
-        return source.replace(partialPattern, function (match, partial) {
-            if (templates[partial]) {
-                partialId += 1;
+        return source.replace(partialPattern, function (match, name) {
+            var partial = templates[name];
 
+            if (partial) {
+                var source = partial._source;
+                var data = $.extend(true, {}, context, partial._helpers);
+                partialId += 1;
                 partials[partialId] = {
+                    events: partial._events,
+                    rendered: partial.rendered,
                     source: source,
                     context: context,
                     parent: parent,
-                    name: partial
+                    name: name
                 };
 
-                var result = Kandybars.render(partial, context, {parent: parent});
-                result.attr('data-partial-id', partialId);
+                var result = Kandybars.renderHTML(source, data, partials[partialId]);
 
-                return result && result[0] ? result[0].outerHTML : '';
+                if (result && result[0]) {
+                    result.attr('data-partial-id', partialId);
+                    return result[0].outerHTML;
+                }
+                return '';
             }
-            throw 'Partial `' + partial + '` does not exist';
+            throw 'Partial `' + name + '` does not exist';
         });
     };
 
@@ -459,8 +453,8 @@
      * @return {string}
      */
     Kandybars.replaceVars = function (source, context, parent) {
-        return source.replace(varPattern, function (match, variable) {
-            var value = Kandybars.resolvePath(variable, context, parent);
+        return source.replace(varPattern, function (match, path) {
+            var value = Kandybars.resolvePath(path, context, parent);
             var type = typeof value;
 
             if (value != null) {
@@ -470,7 +464,7 @@
                 else if (type === 'object') {
                     return value.hasOwnProperty('toString') ? value.toString() : value;
                 }
-                throw 'Cannot replace var `' + variable + '` of type ' + type;
+                throw 'Cannot replace var `' + path + '` of type ' + type;
             }
             return '';
         });
@@ -479,85 +473,77 @@
     /**
      * Returns the template generated with data
      * @param name
-     * @param data
+     * @param context
      * @param options
      * @return {jQuery}
      */
-    Kandybars.render = function (name, data, options) {
-        var bench = new Date().getTime();
-
-        if (!templates[name]) {
-            throw('The template `' + name + '` does not exist');
-        }
-
-        if (typeof data !== 'object') {
-            data = {};
-        }
-
+    Kandybars.render = function (name, context, options) {
         var template = templates[name];
-        var source = templates[name]._source;
 
-        // Merges data and helpers
-        var helpers = $.extend(true, {}, data, template._helpers);
+        if (templates[name]) {
+            if (typeof context !== 'object') {
+                context = {};
+            }
 
-        // Define default options
-        options = $.extend(true, {
-            events: template._events,
-            rendered: template.rendered,
-            name: name,
-            parent: null
-        }, options);
+            var source = templates[name]._source;
 
-        return Kandybars.renderHTML(source, helpers, options);
+            // Merges data and helpers
+            var data = $.extend(true, {}, context, template._helpers);
+
+            // Define default options
+            options = $.extend(true, {
+                events: template._events,
+                rendered: template.rendered,
+                name: name,
+                parent: null
+            }, options);
+
+            return Kandybars.renderHTML(source, data, options);
+        }
+        throw('The template `' + name + '` does not exist');
     };
 
     /**
      * Generate a template form HTML source
      * @param source
-     * @param data
+     * @param context
      * @param options
      * @returns {jQuery}
      */
-    Kandybars.renderHTML = function (source, data, options) {
+    Kandybars.renderHTML = function (source, context, options) {
         options = options || {
             parent: null,
             name: null
         };
 
-        source = Kandybars.replaceAll(source, data, options.parent);
-
-        var tpl;
-
         // Wrap the template in a jQuery element
-        tpl = $(source);
+        var tpl = $(Kandybars.replaceAll(source, context, options.parent));
 
-        // Execute the general callback
-        if (typeof Kandybars.rendered === 'function') {
-            Kandybars.rendered.call(tpl, data);
-        }
-
-        for (var partialId in partials) {
-            if (partials.hasOwnProperty(partialId)) {
-                var partial = partials[partialId];
-                var template = templates[partial.name];
-                var partialTpl = tpl.find('[data-partial-id=' + partialId + ']');
-
-                if (partialTpl && partialTpl.length > 0) {
-                    var events = template._events;
-                    Kandybars.parseEvents(events, partial.context, partialTpl);
-                }
-            }
-        }
+        tpl.find('[data-partial-id]').each(function () {
+            var self = $(this);
+            var partialId = self.attr('data-partial-id');
+            var partial = partials[partialId];
+            Kandybars.parseEvents(partial.events, partial.context, self);
+            Kandybars.rendered(self, context, partial.rendered);
+        });
 
         if (options) {
-            if (typeof options.rendered === 'function') {
-                options.rendered.call(tpl, data);
-            }
-            if (options.events) {
-                Kandybars.parseEvents(options.events, data, tpl);
-            }
+            Kandybars.parseEvents(options.events, context, tpl);
+            Kandybars.rendered(tpl, context, options.rendered);
         }
         return tpl;
+    };
+
+    /**
+     * Executes the rendered callback on the template
+     * @param tpl
+     * @param context
+     * @param callback
+     */
+    Kandybars.rendered = function (tpl, context, callback) {
+        if (typeof callback === 'function') {
+            callback.call(tpl, context);
+        }
     };
 
     /**
@@ -569,6 +555,7 @@
      */
     Kandybars.resolvePath = function (path, context, parent) {
         if (path != null && context != null) {
+
             if (!pathPattern.test(path)) {
                 return null;
             }
