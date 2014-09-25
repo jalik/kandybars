@@ -73,7 +73,7 @@
      * Enable or disable the use of cache
      * @type {boolean}
      */
-    Kandybars.cache = true;
+    Kandybars.cache = false;
 
     /**
      * The built-in helpers
@@ -85,7 +85,7 @@
      * The base path of all templates
      * @type {string}
      */
-    Kandybars.rootDir = 'pages';
+    Kandybars.rootDir = 'templates';
 
     /**
      * The error handler
@@ -495,7 +495,8 @@
                 events: template._events,
                 rendered: template.rendered,
                 name: name,
-                parent: null
+                parent: null,
+                target: null
             }, options);
 
             return Kandybars.renderHTML(source, data, options);
@@ -518,6 +519,10 @@
 
         // Wrap the template in a jQuery element
         var tpl = $(Kandybars.replaceAll(source, context, options.parent));
+
+        if (options && options.target) {
+            $(options.target).empty().append(tpl);
+        }
 
         tpl.find('[data-partial-id]').each(function () {
             var self = $(this);
