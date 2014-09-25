@@ -163,17 +163,8 @@
             dataType: 'html',
             cache: Kandybars.cache,
             success: function (html) {
-                // Scans template tags
-                var models = html.match(templatePattern);
-
-                for (var i = 0; i < models.length; i += 1) {
-                    var model = models[i];
-                    var name = model.match(templateNamePattern)[1];
-                    var source = model.replace(templateTagsPattern, '');
-
-                    // Creates the template
-                    Kandybars.create(name, source);
-                }
+                // Find template tags
+                var models = Kandybars.parseTemplates(html);
 
                 if (models && models.length > 0) {
                     $.ajax({
@@ -182,7 +173,7 @@
                         cache: Kandybars.cache,
                         complete: function (response) {
                             if (typeof callback === 'function') {
-                                callback.call(templates[name]);
+                                callback.call(models);
                             }
                         }
 
@@ -235,6 +226,25 @@
                 Kandybars.parseEvent(event, events[event], context, tpl);
             }
         }
+    };
+
+    /**
+     * Search and creates templates found in the html
+     * @param html
+     * @return {Array}
+     */
+    Kandybars.parseTemplates = function (html) {
+        var models = html.match(templatePattern);
+
+        for (var i = 0; i < models.length; i += 1) {
+            var model = models[i];
+            var name = model.match(templateNamePattern)[1];
+            var source = model.replace(templateTagsPattern, '');
+
+            // Creates the template
+            Kandybars.create(name, source);
+        }
+        return models;
     };
 
     /**

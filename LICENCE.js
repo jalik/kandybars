@@ -22,38 +22,3 @@
  * SOFTWARE.
  */
 
-module.exports = function (grunt) {
-
-    var buildFile = 'build/<%= pkg.name %>-<%= pkg.version %>.min.js';
-
-    // Project configuration.
-    grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
-        concat: {
-            options: {
-                separator: ''
-            },
-            dist: {
-                src: ['LICENCE.js', buildFile],
-                dest: buildFile
-            }
-        },
-        uglify: {
-            options: {
-                banner: ''
-            },
-            build: {
-                src: 'src/kandybars.js',
-                dest: buildFile
-            }
-        }
-    });
-
-    // Load plugins
-    grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
-
-    // Default task(s).
-    grunt.registerTask('default', ['uglify', 'concat']);
-
-};
