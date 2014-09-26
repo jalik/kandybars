@@ -1,7 +1,8 @@
 {
     "name": "kandybars",
     "version": "0.1.0",
-    "homepage": "https://github.com/jalik/Kandybars",
+    "description": "A template engine based on jQuery and supporting events",
+    "license": "MIT",
     "author": {
         "name": "Karl STEIN",
         "email": "karl.stein.pro@gmail.com",
@@ -11,5 +12,9 @@
         "grunt": "~0.4.5",
         "grunt-contrib-uglify": "~0.5.1",
         "grunt-contrib-concat": "~0.5.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jalik/kandybars.js.git"
     }
 }

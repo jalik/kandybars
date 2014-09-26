@@ -34,7 +34,7 @@ module.exports = function (grunt) {
                 separator: ''
             },
             dist: {
-                src: ['LICENCE.js', buildFile],
+                src: ['LICENSE.js', buildFile],
                 dest: buildFile
             }
         },
