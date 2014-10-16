@@ -25,7 +25,6 @@
 (function ($) {
     'use strict';
 
-
     var reservedWords = ['abstract', 'arguments', 'boolean', 'break', 'byte',
         'case', 'catch', 'char', 'class', 'const',
         'continue', 'debugger', 'default', 'delete', 'do',
@@ -39,7 +38,6 @@
         'this', 'throw', 'throws', 'transient', 'true',
         'try', 'typeof', 'var', 'void', 'volatile',
         'while', 'with', 'yield'];
-
 
     // Patterns
     var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
@@ -55,14 +53,12 @@
     var valuePattern = /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;
     var varPattern = /\{\{((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
 
-
     var partials = {};
     var partialId = 0;
     var templates = {};
 
-
     /**
-     *
+     * The Kandybars object
      * @param name
      * @return {Kandybars}
      * @constructor
@@ -111,10 +107,10 @@
         this._source = source;
         this.name = name;
         this.rendered = null;
-        if (!window.Kandybar) {
-            window.Kandybar = {};
+        if (!window.Template) {
+            window.Template = {};
         }
-        return window.Kandybar[name] = this;
+        return window.Template[name] = this;
     };
 
     /**
@@ -187,7 +183,7 @@
     };
 
     /**
-     *
+     * Escapes all regexp special characters
      * @param string
      * @return {XML|string|void}
      */
