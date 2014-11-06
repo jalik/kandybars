@@ -23,38 +23,27 @@
  */
 
 module.exports = function (grunt) {
-
-    var concatenatedFile = "build/<%= pkg.name %>-<%= pkg.version %>.js";
-    var compressedFile = "build/<%= pkg.name %>-<%= pkg.version %>.min.js";
+    var srcFile = "src/kandybars.js";
+    var destFile = "build/<%= pkg.name %>-<%= pkg.version %>.min.js";
 
     // Project configuration.
     grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
-        concat: {
-            options: {
-                separator: ''
-            },
-            dist: {
-                src: ['LICENSE.js', "src/kandybars.js"],
-                dest: concatenatedFile
-            }
-        },
+        pkg: grunt.file.readJSON("package.json"),
         uglify: {
             options: {
                 banner: ""
             },
             build: {
-                src: concatenatedFile,
-                dest: compressedFile
+                src: srcFile,
+                dest: destFile
             }
         }
     });
 
     // Load plugins
-    grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-uglify");
 
     // Default task(s).
-    grunt.registerTask("default", ["concat", "uglify"]);
+    grunt.registerTask("default", ["uglify"]);
 
 };
