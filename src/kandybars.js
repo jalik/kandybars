@@ -107,6 +107,7 @@
         this._source = source;
         this.name = name;
         this.rendered = null;
+
         if (!window.Template) {
             window.Template = {};
         }
@@ -150,12 +151,12 @@
 
     /**
      * Loads a template
-     * @param path
+     * @param file
      * @param callback
      */
-    Kandybars.load = function (path, callback) {
+    Kandybars.load = function (file, callback) {
         $.ajax({
-            url: Kandybars.rootDir + '/' + path + '/page.html',
+            url: Kandybars.rootDir + '/' + file,
             dataType: 'html',
             cache: Kandybars.cache,
             success: function (html) {
@@ -164,7 +165,7 @@
 
                 if (models && models.length > 0) {
                     $.ajax({
-                        url: Kandybars.rootDir + '/' + path + '/script.js',
+                        url: Kandybars.rootDir + '/' + file.replace(/\.(html|tpl)$/, ".js"),
                         dataType: 'script',
                         cache: Kandybars.cache,
                         complete: function (response) {
@@ -177,7 +178,7 @@
                 }
             },
             error: function () {
-                throw('Error while loading template `' + path + '`');
+                throw('Error while loading template `' + file + '`');
             }
         });
     };
