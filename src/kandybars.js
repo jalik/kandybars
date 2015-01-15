@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Karl STEIN
+ * Copyright (c) 2015 Karl STEIN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -78,12 +78,6 @@
     Kandybars.helpers = {};
 
     /**
-     * The base path of all templates
-     * @type {string}
-     */
-    Kandybars.rootDir = 'templates';
-
-    /**
      * The error handler
      * @param xhr
      * @param status
@@ -156,7 +150,7 @@
      */
     Kandybars.load = function (file, callback) {
         $.ajax({
-            url: Kandybars.rootDir + '/' + file,
+            url: file,
             dataType: 'html',
             cache: Kandybars.cache,
             success: function (html) {
@@ -165,7 +159,7 @@
 
                 if (models && models.length > 0) {
                     $.ajax({
-                        url: Kandybars.rootDir + '/' + file.replace(/\.(html|tpl)$/, ".js"),
+                        url: file.replace(/\.(html|tpl)$/, ".js"),
                         dataType: 'script',
                         cache: Kandybars.cache,
                         complete: function (response) {

@@ -10,6 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/node_modules" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="kandybars node_modules" level="project" />
   </component>
 </module>
 
