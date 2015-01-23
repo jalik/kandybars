@@ -434,7 +434,7 @@
                     name: name
                 };
 
-                var result = Kandybars.renderHTML(source, data, partials[partialId]);
+                var result = $(Kandybars.replaceAll(source, data, partials[partialId]));
 
                 if (result && result[0]) {
                     result.attr('data-partial-id', partialId);
@@ -530,7 +530,7 @@
             var partialId = self.attr('data-partial-id');
             var partial = partials[partialId];
             Kandybars.parseEvents(partial.events, partial.context, self);
-            Kandybars.rendered(self, context, partial.rendered);
+            Kandybars.rendered(self, partial.context, partial.rendered);
         });
 
         if (options) {
