@@ -42,7 +42,7 @@
     // Patterns
     var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
     var commentPattern = /\{\{\![^}]+?\}\}/g;
-    var expressionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))\{\{\/if\}\}/g;
+    var expressionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
     var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
     var partialPattern = /\{\{> ([^}]+)\}\}/g;
@@ -370,15 +370,20 @@
      */
     Kandybars.replaceConditions = function (source, context, parent) {
         return source.replace(expressionPattern, function (match, condition, html, html2) {
-            var result = false;
+            var result = "";
 
             condition = condition.replace(valuePattern, function (match, variable) {
                 return Kandybars.parseValue(variable, context, parent);
             });
 
-            result = evalCondition(condition);
-
-            return Kandybars.replaceAll(result ? html : html2, context, parent);
+            if (evalCondition(condition)) {
+                if (typeof html === "string") {
+                    result = Kandybars.replaceAll(html, context, parent);
+                }
+            } else if (typeof html2 === "string") {
+                result = Kandybars.replaceAll(html, context, parent);
+            }
+            return result;
         });
     };
 
