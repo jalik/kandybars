@@ -162,9 +162,9 @@
                         url: file.replace(/\.(html|tpl)$/, ".js"),
                         dataType: 'script',
                         cache: Kandybars.cache,
-                        complete: function (response) {
+                        complete: function () {
                             if (typeof callback === 'function') {
-                                callback.call(models);
+                                callback.call(Kandybars, models);
                             }
                         }
 
@@ -336,19 +336,24 @@
      */
     Kandybars.replaceBlocks = function (source, context, parent) {
         return source.replace(blockPattern, function (match, path, html) {
-            var value = Kandybars.resolvePath(path, context, parent);
+            var object = Kandybars.resolvePath(path, context, parent);
+            var result = '';
 
-            if (value != null) {
-                if (value instanceof Array) {
-                    var list = '';
-
-                    for (var i = 0; i < value.length; i += 1) {
-                        list += Kandybars.replaceAll(html, value[i], context);
+            if (object != null) {
+                if (object instanceof Array) {
+                    for (var i = 0; i < object.length; i += 1) {
+                        result += Kandybars.replaceAll(html.replace("{{@index}}", i), object[i], context);
                     }
-                    return list;
+                }
+                else if (typeof object === "object") {
+                    for (var key in object) {
+                        if (object.hasOwnProperty(key)) {
+                            result += Kandybars.replaceAll(html.replace("{{@key}}", key), object[key], context);
+                        }
+                    }
                 }
             }
-            return '';
+            return result;
         });
     };
 
