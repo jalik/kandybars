@@ -198,7 +198,7 @@
         if (typeof fn === 'function') {
             var parts = event.split(' ', 2);
             var action = parts[0];
-            var target = parts[1] ? tpl.find(parts[1]) : tpl;
+            var target = parts[1] != null ? tpl.find(parts[1]) : tpl;
             target.on(action, function (ev) {
                 fn.call(context, ev, tpl);
             });
@@ -434,19 +434,18 @@
             if (partial) {
                 var source = partial._source;
                 var data = $.extend(true, {}, context, partial._helpers);
-                partialId += 1;
-                partials[partialId] = {
-                    events: partial._events,
-                    rendered: partial.rendered,
-                    source: source,
-                    context: context,
-                    parent: parent,
-                    name: name
-                };
+                var result = $(Kandybars.replaceAll(source, data, parent));
 
-                var result = $(Kandybars.replaceAll(source, data, partials[partialId]));
-
-                if (result && result[0]) {
+                if (result && result.get(0)) {
+                    partialId += 1;
+                    partials[partialId] = {
+                        events: partial._events,
+                        rendered: partial.rendered,
+                        source: source,
+                        context: context,
+                        parent: parent,
+                        name: name
+                    };
                     result.attr('data-partial-id', partialId);
                     return result[0].outerHTML;
                 }
@@ -584,8 +583,8 @@
             if (path.indexOf('../') == 0) {
                 obj = parent;
                 path = path.substring(3);
-            }
-            else if (path.indexOf('this.') == 0) {
+
+            } else if (path.indexOf('this.') == 0) {
                 obj = context;
                 path = path.substring(5);
             }
@@ -601,8 +600,7 @@
                         if (obj != null && typeof obj === 'function') {
                             obj = obj.call(context);
                         }
-                    }
-                    else {
+                    } else {
                         obj = null;
                         break;
                     }
