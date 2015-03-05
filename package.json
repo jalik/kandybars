@@ -1,6 +1,6 @@
 {
     "name": "kandybars",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "A template engine based on jQuery and supporting events",
     "license": "MIT",
     "author": {
