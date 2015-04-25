@@ -159,7 +159,7 @@
 
                 if (models && models.length > 0) {
                     $.ajax({
-                        url: file.replace(/\.(html|tpl)$/, ".js"),
+                        url: file.replace(/\.(html|tpl)$/, '.js'),
                         dataType: 'script',
                         cache: Kandybars.cache,
                         complete: function () {
@@ -342,13 +342,13 @@
             if (object != null) {
                 if (object instanceof Array) {
                     for (var i = 0; i < object.length; i += 1) {
-                        result += Kandybars.replaceAll(html.replace("{{@index}}", i), object[i], context);
+                        result += Kandybars.replaceAll(html.replace('{{@index}}', i), object[i], context);
                     }
                 }
-                else if (typeof object === "object") {
+                else if (typeof object === 'object') {
                     for (var key in object) {
                         if (object.hasOwnProperty(key)) {
-                            result += Kandybars.replaceAll(html.replace("{{@key}}", key), object[key], context);
+                            result += Kandybars.replaceAll(html.replace('{{@key}}', key), object[key], context);
                         }
                     }
                 }
@@ -375,18 +375,18 @@
      */
     Kandybars.replaceConditions = function (source, context, parent) {
         return source.replace(expressionPattern, function (match, condition, html, html2) {
-            var result = "";
+            var result = '';
 
             condition = condition.replace(valuePattern, function (match, variable) {
                 return Kandybars.parseValue(variable, context, parent);
             });
 
             if (evalCondition(condition)) {
-                if (typeof html === "string") {
+                if (typeof html === 'string') {
                     result = Kandybars.replaceAll(html, context, parent);
                 }
-            } else if (typeof html2 === "string") {
-                result = Kandybars.replaceAll(html, context, parent);
+            } else if (typeof html2 === 'string') {
+                result = Kandybars.replaceAll(html2, context, parent);
             }
             return result;
         });

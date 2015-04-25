@@ -1,8 +1,8 @@
 # Kandybars.js
 
-## Creating templates in HTML
+## Create a template in HTML
 
-Each template is wrapped in a **template** html tag and referenced by its name using the **name** attribute.
+Each template is wrapped in a **template** html tag and referenced by a unique name using the **name** attribute.
 
 ```html
 <template name="welcome">
@@ -10,7 +10,7 @@ Each template is wrapped in a **template** html tag and referenced by its name u
 </template>
 ```
 
-## Creating templates in Javascript
+## Create a template in Javascript
 
 This is not the common way, but you can create a template directly from Javascript.
 
@@ -18,14 +18,24 @@ This is not the common way, but you can create a template directly from Javascri
 Kandybars.create('welcome', '<p>Welcome</p>');
 ```
 
-## Loading templates using HTTP request
+## Load templates from a file
 
-A simple way to load template code (HTML) and logic (Javascript) is provided.
+A single HTML file can contain several <template> tags, you just have to call the **load(url, callback)** method to load all templates in the file.
+The callback is executed when the file has been loaded, inside of it **this** refers to the **Kandybars** object.
 
 ```js
 Kandybars.load('relative/path/to/template', function() {
     console.log('Template is loaded');
 });
+```
+
+## Load templates from a string
+
+You can also load templates contained in a string by parsing it.
+
+```js
+Kandybars.parseTemplates('<template name="hello">Hello World</template>');
+Kandybars.render('hello');
 ```
 
 ## Comments
@@ -56,7 +66,7 @@ var tpl = Kandybars.render('hello', {
 });
 ```
 
-## Iteratives blocs
+## Iteratives blocks
 
 Loops are done easily using javascript arrays.
 
@@ -89,7 +99,7 @@ var tpl = Kandybars.render('colors', {
 });
 ```
 
-## Conditional blocs
+## Conditional blocks
 
 It is possible to display data depending of the result of an expression.
 
