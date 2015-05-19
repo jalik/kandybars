@@ -144,6 +144,15 @@
     };
 
     /**
+     * Checks if a template exists
+     * @param name
+     * @return {boolean}
+     */
+    Kandybars.exists = function (name) {
+        return templates.hasOwnProperty(name);
+    };
+
+    /**
      * Loads a template
      * @param file
      * @param callback
@@ -523,15 +532,15 @@
      */
     Kandybars.renderHTML = function (source, context, options) {
         options = options || {
-            parent: null,
-            name: null
-        };
+                parent: null,
+                name: null
+            };
 
         // Wrap the template in a jQuery element
         var tpl = $(Kandybars.replaceAll(source, context, options.parent));
 
         if (options && options.target) {
-            $(options.target).empty().append(tpl);
+            $(options.target).html(tpl);
         }
 
         tpl.find('[data-partial-id]').each(function () {
