@@ -136,35 +136,63 @@
         },
 
         /**
-         * Loads a template
+         * Loads one or more files
          * @param file
          * @param callback
          */
         load: function (file, callback) {
+            // Load a single file
+            if (typeof file === 'string') {
+                this.loadFile(file, callback);
+            }
+            // Load a list of files
+            else if (file instanceof Array) {
+                var remaining = file.length;
+
+                for (var i = 0; i < file.length; i += 1) {
+                    this.loadFile(file[i], function (err) {
+                        remaining -= err ? 0 : 1;
+
+                        if (err || remaining === 0 && (typeof callback === 'function')) {
+                            callback.call(Kandybars, err);
+                        }
+                    });
+                }
+            }
+        },
+
+        /**
+         * Loads a file
+         * @param file
+         * @param callback
+         */
+        loadFile: function (file, callback) {
+            // Get file type
+            var type = file.substr(file.lastIndexOf('.') + 1);
+
             $.ajax({
+                method: 'GET',
                 url: file,
-                dataType: 'html',
                 cache: Kandybars.cache,
-                success: function (html) {
-                    // Find template tags
-                    var models = Kandybars.parseTemplates(html);
-
-                    if (models && models.length > 0) {
-                        $.ajax({
-                            url: file.replace(/\.(html|tpl)$/, '.js'),
-                            dataType: 'script',
-                            cache: Kandybars.cache,
-                            complete: function () {
-                                if (typeof callback === 'function') {
-                                    callback.call(Kandybars, models);
-                                }
-                            }
-
-                        });
+                error: function (xhr, status, err) {
+                    // Execute the callback
+                    if (typeof callback === 'function') {
+                        callback.call(Kandybars, new Error('Cannot load file : ' + file, err));
                     }
                 },
-                error: function () {
-                    throw('Error while loading template `' + file + '`');
+                success: function (result) {
+                    switch (type) {
+                        case 'html':
+                        case 'tpl':
+                            // Get templates from file
+                            Kandybars.parseTemplates(result);
+                            break;
+                    }
+
+                    // Execute the callback
+                    if (typeof callback === 'function') {
+                        callback.call(Kandybars, null);
+                    }
                 }
             });
         },
