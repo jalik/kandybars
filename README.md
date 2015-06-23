@@ -24,8 +24,18 @@ A single HTML file can contain several <template> tags, you just have to call th
 The callback is executed when the file has been loaded,in the callback, **this** refers to the **Kandybars** object.
 
 ```js
+// Load a file
 Kandybars.load('relative/path/to/template', function() {
     console.log('Template is loaded');
+});
+
+// Load multiple files
+Kandybars.load([
+        'relative/path/to/file1',
+        'relative/path/to/file2',
+        'relative/path/to/file3'
+    ], function() {
+    console.log('Files loaded');
 });
 ```
 
