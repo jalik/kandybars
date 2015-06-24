@@ -25,6 +25,11 @@
 (function ($) {
     'use strict';
 
+    // Check jQuery dependency
+    if ($ === null || $ === undefined || !jQuery) {
+        throw new Error('jQuery not found');
+    }
+
     var reservedWords = ['abstract', 'arguments', 'boolean', 'break', 'byte',
         'case', 'catch', 'char', 'class', 'const',
         'continue', 'debugger', 'default', 'delete', 'do',
@@ -86,8 +91,17 @@
             if (typeof fn === 'function') {
                 var parts = event.split(' ', 2);
                 var action = parts[0];
-                var elements = parts[1] != null ? tpl.find(parts[1]) : tpl;
-                elements.on(action, function (ev) {
+
+                // Search target in root node
+                var target = parts[1] ? tpl.filter(parts[1]) : tpl;
+
+                // Search target in child nodes
+                if (target.length < 1) {
+                    target = tpl.find(parts[1]);
+                }
+
+                // Attach event
+                target.on(action, function (ev) {
                     fn.call(data, ev, tpl);
                 });
             }
@@ -277,39 +291,25 @@
         },
 
         /**
-         * Replaces all dynamic elements in the source
+         * Replaces all dynamic elements
          * @param source
          * @param data
          * @param parent
          * @return {string}
          */
         replaceAll: function (source, data, parent) {
-            // Replace comments
             source = Kandybars.replaceComments(source);
-
-            // Replace conditions
             source = Kandybars.replaceConditions(source, data, parent);
-
-            // Replace blocks
             source = Kandybars.replaceBlocks(source, data, parent);
-
-            // Replace partials
             source = Kandybars.replacePartials(source, data, parent);
-
-            // Replace helpers
             source = Kandybars.replaceHelpers(source, data, parent);
-
-            // Replace variables
             source = Kandybars.replaceVars(source, data, parent);
-
-            // Replace tags
             source = Kandybars.replaceTags(source);
-
             return source;
         },
 
         /**
-         * Replaces all blocks in the source
+         * Replaces all blocks
          * @param source
          * @param data
          * @param parent
@@ -339,7 +339,7 @@
         },
 
         /**
-         * Replaces all comments in the source
+         * Replaces all comments
          * @param source
          * @return {string}
          */
@@ -348,7 +348,7 @@
         },
 
         /**
-         * Replaces all conditions in the source
+         * Replaces all conditions
          * @param source
          * @param data
          * @param parent
@@ -374,7 +374,7 @@
         },
 
         /**
-         * Replaces all helpers in the source
+         * Replaces all helpers
          * @param source
          * @param data
          * @param parent
@@ -393,25 +393,23 @@
                     args[i] = value;
                 }
 
-                var helper = Kandybars.helpers[name];
-
-                if (helper === undefined) {
+                if (Kandybars.helpers[name] === undefined) {
                     throw 'Helper `' + name + '` does not exist';
                 }
 
-                var result;
+                // Get the helper value
+                var result = Kandybars.helpers[name];
 
-                if (typeof helper === 'function') {
-                    result = Kandybars.helpers[name].apply(data, args);
-                } else {
-                    result = Kandybars.helpers[name];
+                // Get the value from a function
+                if (typeof result === 'function') {
+                    result = result.apply(data, args);
                 }
                 return result !== undefined && result !== null ? result : '';
             });
         },
 
         /**
-         * Replaces all partials in the source
+         * Replaces all partials
          * @param source
          * @param data
          * @param parent
@@ -419,23 +417,23 @@
          */
         replacePartials: function (source, data, parent) {
             return source.replace(partialPattern, function (match, name) {
-                var partial = templates[name];
+                var tmpl = templates[name];
 
-                if (partial) {
-                    var source = partial._source;
-                    var ctx = $.extend(true, {}, data, partial._helpers);
-                    var node = $(Kandybars.replaceAll(source, ctx, parent));
+                if (tmpl) {
+                    var src = tmpl._source;
+                    var ctx = $.extend(true, {}, data, tmpl._helpers);
+                    var node = $(Kandybars.replaceAll(src, ctx, parent));
 
                     if (node && node.length > 0) {
                         partialId += 1;
                         partials[partialId] = {
-                            events: partial._events,
-                            rendered: Template[name].rendered,// todo sup ?
-                            source: source,
-                            context: data,
+                            data: data,
+                            events: tmpl._events,
+                            name: name,
                             parent: parent,
-                            name: name
+                            rendered: tmpl.rendered
                         };
+                        // Add the partial id as tag attribute
                         node.attr('data-partial-id', partialId);
                         return node[0].outerHTML;
                     }
@@ -446,7 +444,7 @@
         },
 
         /**
-         * Replaces all empty tags
+         * Replaces all tags
          * @param source
          * @return {*}
          */
@@ -457,7 +455,7 @@
         },
 
         /**
-         * Replaces all variables in the source
+         * Replaces all variables
          * @param source
          * @param data
          * @param parent
@@ -485,41 +483,37 @@
         },
 
         /**
-         * Returns the template generated with data
+         * Returns the generated template
          * @param name
          * @param data
          * @param options
          * @return {jQuery}
          */
         render: function (name, data, options) {
-            var template = templates[name];
-
-            if (templates[name]) {
-                if (typeof data !== 'object') {
-                    data = {};
-                }
-
-                var source = templates[name]._source;
-
-                // Merges data and helpers
-                var ctx = $.extend(true, {}, data, template._helpers);
-
-                // Define default options
-                options = $.extend(true, {
-                    events: template._events,
-                    rendered: Template[name].rendered,// todo sup ?
-                    name: name,
-                    parent: null,
-                    target: null
-                }, options);
-
-                return Kandybars.renderHTML(source, ctx, options);
+            if (!templates[name]) {
+                throw('The template `' + name + '` does not exist');
             }
-            throw('The template `' + name + '` does not exist');
+
+            // Get the template
+            var tmpl = templates[name];
+
+            // Prepare options
+            options = $.extend(true, {
+                events: tmpl._events,
+                name: name,
+                parent: null,
+                rendered: tmpl.rendered,
+                target: null
+            }, options);
+
+            // Prepare data
+            data = $.extend(true, {}, (data || {}), tmpl._helpers);
+
+            return Kandybars.renderHTML(tmpl._source, data, options);
         },
 
         /**
-         * Generate a template form HTML source
+         * Returns the generated template
          * @param source
          * @param data
          * @param options
@@ -527,42 +521,48 @@
          */
         renderHTML: function (source, data, options) {
             options = options || {
+                    events: null,
+                    name: null,
                     parent: null,
-                    name: null
+                    rendered: null
                 };
 
-            // Wrap the template in a jQuery element
+            // Generate the template with data
             var tpl = $(Kandybars.replaceAll(source, data, options.parent));
 
-            if (options && options.target) {
+            // Insert the template in the target
+            if (options.target) {
                 $(options.target).html(tpl);
             }
 
-            tpl.find('[data-partial-id]').each(function () {
-                var self = $(this);
-                var partialId = self.attr('data-partial-id');
+            var processPartial = function () {
+                var node = $(this);
+                var partialId = node.attr('data-partial-id');
                 var partial = partials[partialId];
-                Kandybars.attachEvents(partial.events, partial.context, self);
-                Kandybars.rendered(self, partial.context, partial.rendered);
-            });
 
-            if (options) {
-                Kandybars.attachEvents(options.events, data, tpl);
-                Kandybars.rendered(tpl, data, options.rendered);
+                // Attach events
+                Kandybars.attachEvents(partial.events, partial.data, node);
+
+                // Execute rendered callback
+                if (typeof partial.rendered === 'function') {
+                    partial.rendered.call(node, partial.data);
+                }
+            };
+
+            // Search partial in root node
+            tpl.filter('[data-partial-id]').each(processPartial);
+
+            // Search partials in child nodes
+            tpl.find('[data-partial-id]').each(processPartial);
+
+            // Attach events
+            Kandybars.attachEvents(options.events, data, tpl);
+
+            // Execute rendered callback
+            if (typeof options.rendered === 'function') {
+                options.rendered.call(tpl, data);
             }
             return tpl;
-        },
-
-        /**
-         * Executes the rendered callback on the template
-         * @param tpl
-         * @param data
-         * @param callback
-         */
-        rendered: function (tpl, data, callback) {
-            if (typeof callback === 'function') {
-                callback.call(tpl, data);
-            }
         },
 
         /**
@@ -613,16 +613,6 @@
                 return obj;
             }
         }
-    };
-
-    /**
-     * The error handler
-     * @param xhr
-     * @param status
-     * @param code
-     */
-    Kandybars.errorHandler = function (xhr, status, code) {
-        console.error(xhr.status + ' ' + xhr.statusText);
     };
 
     /**
