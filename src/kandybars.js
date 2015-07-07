@@ -47,7 +47,7 @@
     // Patterns
     var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
     var commentPattern = /\{\{\![^}]+?\}\}/g;
-    var expressionPattern = /\{\{\#if ([^}]+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g;
+    var expressionPattern = /\{\{\#if ([^}]+)\}\}((?:(?!\{\{\#if)[\s\S])*?)\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
     var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
     var partialPattern = /\{\{> *([^}]+)\}\}/g;
@@ -299,7 +299,11 @@
          */
         replaceAll: function (source, data, parent) {
             source = Kandybars.replaceComments(source);
-            source = Kandybars.replaceConditions(source, data, parent);
+
+            // Very greedy !!
+            while (source.indexOf('{{#if') !== -1) {
+                source = Kandybars.replaceConditions(source, data, parent);
+            }
             source = Kandybars.replaceBlocks(source, data, parent);
             source = Kandybars.replacePartials(source, data, parent);
             source = Kandybars.replaceHelpers(source, data, parent);
@@ -355,14 +359,18 @@
          * @return {string}
          */
         replaceConditions: function (source, data, parent) {
-            return source.replace(expressionPattern, function (match, condition, html, html2) {
+            return source.replace(expressionPattern, function (match, test, html) {
                 var result = '';
 
-                condition = condition.replace(valuePattern, function (match, variable) {
+                var parts = html.split('{{else}}');
+                html = parts[0];
+                var html2 = parts[1];
+
+                test = test.replace(valuePattern, function (match, variable) {
                     return Kandybars.parseValue(variable, data, parent);
                 });
 
-                if (evalCondition(condition)) {
+                if (evalCondition(test)) {
                     if (typeof html === 'string') {
                         result = Kandybars.replaceAll(html, data, parent);
                     }
@@ -627,6 +635,7 @@
         this._helpers = {};
         this._source = source;
         this.name = name;
+        this.rendered = null;
 
         if (!window.Template) {
             window.Template = {};
