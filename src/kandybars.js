@@ -26,7 +26,7 @@
     'use strict';
 
     // Check jQuery dependency
-    if ($ === null || $ === undefined || !jQuery) {
+    if (typeof $ !== 'function' || !jQuery) {
         throw new Error('jQuery not found');
     }
 
@@ -89,21 +89,26 @@
          */
         attachEvent: function (event, fn, data, tpl) {
             if (typeof fn === 'function') {
-                var parts = event.split(' ', 2);
-                var action = parts[0];
+                var events = event.split(',');
 
-                // Search target in root node
-                var target = parts[1] ? tpl.filter(parts[1]) : tpl;
+                for (var i = 0; i < events.length; i += 1) {
+                    event = events[i];
+                    var parts = event.split(' ', 2);
+                    var action = parts[0];
 
-                // Search target in child nodes
-                if (target.length < 1) {
-                    target = tpl.find(parts[1]);
+                    // Search target in root node
+                    var target = parts[1] ? tpl.filter(parts[1]) : tpl;
+
+                    // Search target in child nodes
+                    if (target.length < 1) {
+                        target = tpl.find(parts[1]);
+                    }
+
+                    // Attach event
+                    target.on(action, function (ev) {
+                        fn.call(data, ev, tpl);
+                    });
                 }
-
-                // Attach event
-                target.on(action, function (ev) {
-                    fn.call(data, ev, tpl);
-                });
             }
         },
 
@@ -167,8 +172,10 @@
                     this.loadFile(file[i], function (err) {
                         remaining -= err ? 0 : 1;
 
-                        if (err || remaining === 0 && (typeof callback === 'function')) {
-                            callback.call(Kandybars, err);
+                        if (err || remaining === 0) {
+                            if (typeof callback === 'function') {
+                                callback.call(Kandybars, err);
+                            }
                         }
                     });
                 }
@@ -299,11 +306,7 @@
          */
         replaceAll: function (source, data, parent) {
             source = Kandybars.replaceComments(source);
-
-            // Very greedy !!
-            while (source.indexOf('{{#if') !== -1) {
-                source = Kandybars.replaceConditions(source, data, parent);
-            }
+            source = Kandybars.replaceConditions(source, data, parent);
             source = Kandybars.replaceBlocks(source, data, parent);
             source = Kandybars.replacePartials(source, data, parent);
             source = Kandybars.replaceHelpers(source, data, parent);
@@ -359,26 +362,30 @@
          * @return {string}
          */
         replaceConditions: function (source, data, parent) {
-            return source.replace(expressionPattern, function (match, test, html) {
-                var result = '';
+            // Very greedy !!
+            while (source.indexOf('{{#if') !== -1) {
+                source = source.replace(expressionPattern, function (match, test, html) {
+                    var result = '';
 
-                var parts = html.split('{{else}}');
-                html = parts[0];
-                var html2 = parts[1];
+                    var parts = html.split('{{else}}');
+                    html = parts[0];
+                    var html2 = parts[1];
 
-                test = test.replace(valuePattern, function (match, variable) {
-                    return Kandybars.parseValue(variable, data, parent);
-                });
+                    test = test.replace(valuePattern, function (match, variable) {
+                        return Kandybars.parseValue(variable, data, parent);
+                    });
 
-                if (evalCondition(test)) {
-                    if (typeof html === 'string') {
-                        result = Kandybars.replaceAll(html, data, parent);
+                    if (evalCondition(test)) {
+                        if (typeof html === 'string') {
+                            result = Kandybars.replaceAll(html, data, parent);
+                        }
+                    } else if (typeof html2 === 'string') {
+                        result = Kandybars.replaceAll(html2, data, parent);
                     }
-                } else if (typeof html2 === 'string') {
-                    result = Kandybars.replaceAll(html2, data, parent);
-                }
-                return result;
-            });
+                    return result;
+                });
+            }
+            return source;
         },
 
         /**
@@ -443,7 +450,7 @@
                         };
                         // Add the partial id as tag attribute
                         node.attr('data-partial-id', partialId);
-                        return node[0].outerHTML;
+                        return outerHTML(node.get(0));
                     }
                     return '';
                 }
@@ -690,6 +697,22 @@
         var __kbRes = undefined;
         eval('__kbRes = ( ' + condition + ' );');
         return __kbRes;
+    }
+
+    /**
+     * Returns the outer HTML (compatibility for older browsers)
+     * @param node
+     * @return {outerHTML|string|*}
+     */
+    function outerHTML(node) {
+        // if IE, Chrome take the internal method otherwise build one
+        return node.outerHTML || (function (n) {
+                var div = document.createElement('div'), h;
+                div.appendChild(n.cloneNode(true));
+                h = div.innerHTML;
+                div = null;
+                return h;
+            })(node);
     }
 
     window.Kandybars = Kandybars;
