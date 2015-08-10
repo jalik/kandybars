@@ -85,11 +85,11 @@ var Kandybars, Template = {};
          * Attaches the event to the elements in the template
          * @param event
          * @param fn
-         * @param data
+         * @param context
          * @param tpl
          * @param parent
          */
-        attachEvent: function (event, fn, data, tpl, parent) {
+        attachEvent: function (event, fn, context, tpl, parent) {
             if (typeof fn === 'function') {
                 var events = event.split(',');
 
@@ -111,7 +111,7 @@ var Kandybars, Template = {};
                         // Attach event now and in the future
                         tpl.on(action, target, function (ev) {
                             if (!selector || $(ev.target).filter(selector).length > 0) {
-                                fn.call(data, ev, tpl, parent);
+                                fn.call(context, ev, tpl, parent);
                             }
                         });
                     })(action, target, selector);
@@ -122,14 +122,14 @@ var Kandybars, Template = {};
         /**
          * Parses all events in the template
          * @param events
-         * @param data
+         * @param context
          * @param tpl
          * @param parent
          */
-        attachEvents: function (events, data, tpl, parent) {
+        attachEvents: function (events, context, tpl, parent) {
             for (var event in events) {
                 if (events.hasOwnProperty(event)) {
-                    Kandybars.attachEvent(event, events[event], data, tpl, parent);
+                    Kandybars.attachEvent(event, events[event], context, tpl, parent);
                 }
             }
         },
@@ -239,13 +239,13 @@ var Kandybars, Template = {};
         /**
          * Returns the parsed value
          * @param value
-         * @param data
+         * @param context
          * @param parent
          * @return {*}
          */
-        parseValue: function (value, data, parent) {
+        parseValue: function (value, context, parent) {
             if (value != null) {
-                if (/^(['"'])[^\1]+?\1$/.test(value)) {
+                if (/^(['"])[^\1]+?\1$/.test(value)) {
                     return value;
                 }
                 if (/^true$/i.test(value)) {
@@ -264,7 +264,7 @@ var Kandybars, Template = {};
                     return parseFloat(value);
                 }
 
-                value = Kandybars.resolvePath(value, data, parent);
+                value = Kandybars.resolvePath(value, context, parent);
 
                 if (value != null) {
                     if (/^true$/i.test(value)) {
@@ -299,17 +299,24 @@ var Kandybars, Template = {};
         /**
          * Replaces all dynamic elements
          * @param source
-         * @param data
-         * @param parent
+         * @param context
+         * @param options
          * @return {string}
          */
-        replaceAll: function (source, data, parent) {
+        replaceAll: function (source, context, options) {
+            if (context) {
+                for (var k in context) {
+                    if (context.hasOwnProperty(k) && typeof context[k] === 'function') {
+                        context[k] = context[k].call(context);
+                    }
+                }
+            }
             source = Kandybars.replaceComments(source);
-            source = Kandybars.replaceConditions(source, data, parent);
-            source = Kandybars.replaceBlocks(source, data, parent);
-            source = Kandybars.replacePartials(source, data, parent);
-            source = Kandybars.replaceHelpers(source, data, parent);
-            source = Kandybars.replaceVars(source, data, parent);
+            source = Kandybars.replaceConditions(source, context, options.parent);
+            source = Kandybars.replaceBlocks(source, context, options.parent);
+            source = Kandybars.replacePartials(source, context, options.parent);
+            source = Kandybars.replaceHelpers(source, context, options.parent);
+            source = Kandybars.replaceVars(source, context, options.parent);
             source = Kandybars.replaceTags(source);
             return source;
         },
@@ -317,25 +324,25 @@ var Kandybars, Template = {};
         /**
          * Replaces all blocks
          * @param source
-         * @param data
+         * @param context
          * @param parent
          * @return {string}
          */
-        replaceBlocks: function (source, data, parent) {
+        replaceBlocks: function (source, context, parent) {
             return source.replace(blockPattern, function (match, path, html) {
-                var object = Kandybars.resolvePath(path, data, parent);
+                var object = Kandybars.resolvePath(path, context, parent);
                 var result = '';
 
                 if (object != null) {
                     if (object instanceof Array) {
                         for (var i = 0; i < object.length; i += 1) {
-                            result += Kandybars.replaceAll(html.replace('{{@index}}', i), object[i], data);
+                            result += Kandybars.replaceAll(html.replace('{{@index}}', i), object[i], {parent: context});
                         }
                     }
                     else if (typeof object === 'object') {
                         for (var key in object) {
                             if (object.hasOwnProperty(key)) {
-                                result += Kandybars.replaceAll(html.replace('{{@key}}', key), object[key], data);
+                                result += Kandybars.replaceAll(html.replace('{{@key}}', key), object[key], {parent: context});
                             }
                         }
                     }
@@ -356,11 +363,11 @@ var Kandybars, Template = {};
         /**
          * Replaces all conditions
          * @param source
-         * @param data
+         * @param context
          * @param parent
          * @return {string}
          */
-        replaceConditions: function (source, data, parent) {
+        replaceConditions: function (source, context, parent) {
             // Very greedy !!
             while (source.indexOf('{{#if') !== -1) {
                 source = source.replace(expressionPattern, function (match, test, html) {
@@ -371,15 +378,15 @@ var Kandybars, Template = {};
                     var html2 = parts[1];
 
                     test = test.replace(valuePattern, function (match, variable) {
-                        return Kandybars.parseValue(variable, data, parent);
+                        return Kandybars.parseValue(variable, context, parent);
                     });
 
                     if (evalCondition(test)) {
                         if (typeof html === 'string') {
-                            result = Kandybars.replaceAll(html, data, parent);
+                            result = Kandybars.replaceAll(html, context, {parent: parent});
                         }
                     } else if (typeof html2 === 'string') {
-                        result = Kandybars.replaceAll(html2, data, parent);
+                        result = Kandybars.replaceAll(html2, context, {parent: parent});
                     }
                     return result;
                 });
@@ -390,16 +397,16 @@ var Kandybars, Template = {};
         /**
          * Replaces all helpers
          * @param source
-         * @param data
+         * @param context
          * @param parent
          * @return {string}
          */
-        replaceHelpers: function (source, data, parent) {
+        replaceHelpers: function (source, context, parent) {
             return source.replace(helperPattern, function (match, name, args) {
                 args = args.split(' ');
 
                 for (var i = 0; i < args.length; i += 1) {
-                    var value = Kandybars.parseValue(args[i], data, parent);
+                    var value = Kandybars.parseValue(args[i], context, parent);
 
                     if (/^(["'])[^\1]+?\1$/.test(value)) {
                         value = value.substring(1, value.length - 1);
@@ -416,7 +423,7 @@ var Kandybars, Template = {};
 
                 // Get the value from a function
                 if (typeof result === 'function') {
-                    result = result.apply(data, args);
+                    result = result.apply(context, args);
                 }
                 return result !== undefined && result !== null ? result : '';
             });
@@ -425,11 +432,11 @@ var Kandybars, Template = {};
         /**
          * Replaces all partials
          * @param source
-         * @param data
+         * @param context
          * @param parent
          * @return {string}
          */
-        replacePartials: function (source, data, parent) {
+        replacePartials: function (source, context, parent) {
             return source.replace(partialPattern, function (match, name) {
                 var tmpl = Template[name];
 
@@ -448,7 +455,7 @@ var Kandybars, Template = {};
 
                 partialId += 1;
                 partials[partialId] = {
-                    data: data,
+                    data: context,
                     events: tmpl._events,
                     helpers: tmpl._helpers,
                     name: name,
@@ -463,8 +470,8 @@ var Kandybars, Template = {};
                     src.substr(closeIndex)
                 ].join('');
 
-                var ctx = $.extend({}, data, tmpl._helpers);
-                return Kandybars.replaceAll(src, ctx, parent);
+                var ctx = $.extend({}, context, tmpl._helpers);
+                return Kandybars.replaceAll(src, ctx, {parent: parent});
             });
         },
 
@@ -481,13 +488,13 @@ var Kandybars, Template = {};
         /**
          * Replaces all variables
          * @param source
-         * @param data
+         * @param context
          * @param parent
          * @return {string}
          */
-        replaceVars: function (source, data, parent) {
+        replaceVars: function (source, context, parent) {
             return source.replace(varPattern, function (match, path) {
-                var value = Kandybars.resolvePath(path, data, parent);
+                var value = Kandybars.resolvePath(path, context, parent);
                 var type = typeof value;
 
                 if (value != null) {
@@ -498,7 +505,7 @@ var Kandybars, Template = {};
                         return value.hasOwnProperty('toString') ? value.toString() : value;
 
                     } else if (type === 'function') {
-                        return value(data, parent);
+                        return value(context, parent);
                     }
                     throw 'Cannot replace var `' + path + '` of type ' + type;
                 }
@@ -509,11 +516,11 @@ var Kandybars, Template = {};
         /**
          * Returns the generated template
          * @param name
-         * @param data
+         * @param context
          * @param options
          * @return {jQuery}
          */
-        render: function (name, data, options) {
+        render: function (name, context, options) {
             if (!this.exists(name)) {
                 throw('The template `' + name + '` does not exist');
             }
@@ -532,19 +539,19 @@ var Kandybars, Template = {};
             }, options);
 
             // Merge data and helpers
-            data = $.extend({}, (data || {}), tmpl._helpers);
+            context = $.extend({}, (context || {}), tmpl._helpers);
 
-            return Kandybars.renderHTML(tmpl._source, data, options);
+            return Kandybars.renderHTML(tmpl._source, context, options);
         },
 
         /**
          * Returns the generated template
          * @param source
-         * @param data
+         * @param context
          * @param options
          * @returns {jQuery}
          */
-        renderHTML: function (source, data, options) {
+        renderHTML: function (source, context, options) {
             options = $.extend(true, {
                 events: {},
                 parent: {},
@@ -552,7 +559,7 @@ var Kandybars, Template = {};
             }, options);
 
             // Generate the template with data
-            var tpl = $(Kandybars.replaceAll(source, data, options.parent));
+            var tpl = $(Kandybars.replaceAll(source, context, options));
 
             // Insert the template in the target
             if (options.target) {
@@ -580,11 +587,11 @@ var Kandybars, Template = {};
             tpl.find('[data-partial-id]').each(processPartial);
 
             // Attach events
-            Kandybars.attachEvents(options.events, data, tpl, options.parent);
+            Kandybars.attachEvents(options.events, context, tpl, options.parent);
 
             // Execute rendered callback
             if (typeof options.rendered === 'function') {
-                options.rendered.call(tpl, data);
+                options.rendered.call(tpl, context);
             }
             return tpl;
         },
@@ -592,27 +599,27 @@ var Kandybars, Template = {};
         /**
          * Returns the value of a path
          * @param path
-         * @param data
+         * @param context
          * @param parent
          * @return {*}
          */
-        resolvePath: function (path, data, parent) {
-            if (path != null && data != null) {
+        resolvePath: function (path, context, parent) {
+            if (path != null && context != null) {
                 if (!pathPattern.test(path)) {
                     return null;
                 }
                 if (path === 'this') {
-                    return data;
+                    return context;
                 }
 
-                var obj = data;
+                var obj = context;
 
                 if (path.indexOf('../') == 0) {
                     obj = parent;
                     path = path.substring(3);
 
                 } else if (path.indexOf('this.') == 0) {
-                    obj = data;
+                    obj = context;
                     path = path.substring(5);
                 }
 
@@ -626,7 +633,7 @@ var Kandybars, Template = {};
 
                             // Get the result of the function
                             if (obj != null && typeof obj === 'function') {
-                                obj = obj.call(data);
+                                obj = obj.call(context);
                             }
                         } else {
                             obj = null;
@@ -650,7 +657,6 @@ var Kandybars, Template = {};
         this._helpers = {};
         this._source = source;
         this.name = name;
-        this.created = null;
         this.rendered = null;
     };
 
