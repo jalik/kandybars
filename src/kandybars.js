@@ -52,7 +52,7 @@ var Kandybars, Template = {};
     var expressionPattern = /\{\{\#if ([^}]+)\}\}((?:(?!\{\{\#if)[\s\S])*?)\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
     var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
-    var partialPattern = /\{\{> *([^}]+)\}\}/g;
+    var partialPattern = /\{\{> *([^ }]+)( +[^}]+)*\}\}/g;
     var templatePattern = /<template[^>]*>([\s\S]*?)<\/template>/g;
     var templateNamePattern = /name="([^"]+)"/;
     var templateTagsPattern = /<template[^>]*>|<\/template>|/g;
@@ -218,6 +218,27 @@ var Kandybars, Template = {};
         },
 
         /**
+         * Returns params from string
+         * @example "number=123 string='abc' variable=val"
+         * @param params
+         * @param context
+         * @return {{}}
+         */
+        parseParams: function (params, context) {
+            var obj = {};
+
+            if (typeof params === 'string') {
+                var p = params.trim().split(' ');
+
+                for (var i = 0; i < p.length; i += 1) {
+                    var param = p[i].trim().split('=', 2);
+                    obj[param[0].trim()] = Kandybars.parseValue(param[1], context);
+                }
+            }
+            return obj;
+        },
+
+        /**
          * Search and creates templates found in the html
          * @param html
          * @return {Array}
@@ -246,7 +267,7 @@ var Kandybars, Template = {};
         parseValue: function (value, context, parent) {
             if (value != null) {
                 if (/^(['"])[^\1]+?\1$/.test(value)) {
-                    return value;
+                    return value.replace(/^['"]/g, '').replace(/['"]$/g, '');
                 }
                 if (/^true$/i.test(value)) {
                     return true;
@@ -437,7 +458,7 @@ var Kandybars, Template = {};
          * @return {string}
          */
         replacePartials: function (source, context, parent) {
-            return source.replace(partialPattern, function (match, name) {
+            return source.replace(partialPattern, function (match, name, params) {
                 var tmpl = Template[name];
 
                 if (!tmpl) {
@@ -453,9 +474,15 @@ var Kandybars, Template = {};
                 var closeIndex = src.indexOf('>', nodeIndex);
                 if (closeIndex === -1) return '';
 
+                // Get partial params
+                params = Kandybars.parseParams(params, context) || {};
+
+                // Prepare partial context
+                var ctx = $.extend({}, context, tmpl._helpers, params);
+
                 partialId += 1;
                 partials[partialId] = {
-                    data: context,
+                    data: ctx,
                     events: tmpl._events,
                     helpers: tmpl._helpers,
                     name: name,
@@ -470,7 +497,6 @@ var Kandybars, Template = {};
                     src.substr(closeIndex)
                 ].join('');
 
-                var ctx = $.extend({}, context, tmpl._helpers);
                 return Kandybars.replaceAll(src, ctx, {parent: parent});
             });
         },
