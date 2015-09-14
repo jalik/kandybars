@@ -232,7 +232,17 @@ var Kandybars, Template = {};
 
                 for (var i = 0; i < p.length; i += 1) {
                     var param = p[i].trim().split('=', 2);
-                    obj[param[0].trim()] = Kandybars.parseValue(param[1], context);
+                    var attr = param[0].trim();
+
+                    if (attr === 'this') {
+                        var value = Kandybars.parseValue(param[1], context);
+
+                        if (typeof value === 'object') {
+                            obj = $.extend({}, value, obj);
+                        }
+                    } else {
+                        obj[attr] = Kandybars.parseValue(param[1], context);
+                    }
                 }
             }
             return obj;
