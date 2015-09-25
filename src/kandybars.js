@@ -58,6 +58,7 @@ var Kandybars, Template = {};
     var templateTagsPattern = /<template[^>]*>|<\/template>|/g;
     var valuePattern = /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;
     var varPattern = /\{\{((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
+    var withPattern = /\{\{\#with ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/with\}\}/g;
 
     var partials = {};
     var partialId = 0;
@@ -311,7 +312,7 @@ var Kandybars, Template = {};
                         return parseFloat(value);
                     }
                     if (typeof value === 'string') {
-                        value = '"' + value.replace('"', '\\"') + '"';
+                        value = '"' + value.replace(/"/g, '\\"') + '"';
                     }
                 }
             }
@@ -346,6 +347,7 @@ var Kandybars, Template = {};
             source = Kandybars.replaceConditions(source, context, options.parent);
             source = Kandybars.replaceBlocks(source, context, options.parent);
             source = Kandybars.replacePartials(source, context, options.parent);
+            source = Kandybars.replaceWith(source, context, options.parent);
             source = Kandybars.replaceHelpers(source, context, options.parent);
             source = Kandybars.replaceVars(source, context, options.parent);
             source = Kandybars.replaceTags(source);
@@ -550,6 +552,25 @@ var Kandybars, Template = {};
         },
 
         /**
+         * Replaces with blocks (custom scope)
+         * @param source
+         * @param context
+         * @param parent
+         * @return {string}
+         */
+        replaceWith: function (source, context, parent) {
+            return source.replace(withPattern, function (match, path, html) {
+                var object = Kandybars.resolvePath(path, context, parent);
+                var result = '';
+
+                if (object != null && typeof object === 'object') {
+                    result = Kandybars.replaceAll(html, object, {parent: context});
+                }
+                return result;
+            });
+        },
+
+        /**
          * Returns the generated template
          * @param name
          * @param context
@@ -731,7 +752,14 @@ var Kandybars, Template = {};
      */
     function evalCondition(condition) {
         var __kbRes = undefined;
+
+        if (typeof condition === 'string' && condition.length > 0) {
+            // Remove carrier returns that could break evaluation
+            condition = condition.replace(/\r|\n/g, '');
+        }
+
         eval('__kbRes = ( ' + condition + ' );');
+
         return __kbRes;
     }
 
