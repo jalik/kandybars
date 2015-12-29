@@ -343,6 +343,9 @@ var Kandybars, Template = {};
                     }
                 }
             }
+            if (!options) {
+                options = {};
+            }
             source = Kandybars.replaceComments(source);
             source = Kandybars.replaceConditions(source, context, options.parent);
             source = Kandybars.replaceBlocks(source, context, options.parent);
