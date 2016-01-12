@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Karl STEIN
+ * Copyright (c) 2016 Karl STEIN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -99,23 +99,20 @@ var Kandybars, Template = {};
                     var parts = event.split(' ', 2);
                     var action = parts[0];
                     var selector = parts[1];
+                    var target = selector && tpl.filter(selector);
 
-                    // Search target in root node
-                    var target = selector ? tpl.filter(selector) : tpl;
-
-                    // Search target in child nodes
-                    if (target.length < 1) {
-                        target = tpl.find(selector);
+                    // Check if root node is the target
+                    if (target && target.length === 1) {
+                        tpl = target;
+                        selector = null;
                     }
 
-                    (function (action, target, selector) {
+                    (function (action, selector) {
                         // Attach event now and in the future
-                        tpl.on(action, target, function (ev) {
-                            if (!selector || $(ev.target).filter(selector).length > 0) {
-                                fn.call(context, ev, tpl, parent);
-                            }
+                        tpl.on(action, selector, function (ev) {
+                            fn.call(context, ev, tpl, parent);
                         });
-                    })(action, target, selector);
+                    })(action, selector);
                 }
             }
         },
