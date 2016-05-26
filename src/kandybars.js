@@ -22,15 +22,8 @@
  * SOFTWARE.
  */
 
-var Kandybars, Template = {};
-
 (function ($) {
     'use strict';
-
-    // Check jQuery dependency
-    if (typeof $ !== 'function' || !jQuery) {
-        throw new Error('jQuery not found');
-    }
 
     var reservedWords = ['abstract', 'arguments', 'boolean', 'break', 'byte',
         'case', 'catch', 'char', 'class', 'const',
@@ -61,15 +54,16 @@ var Kandybars, Template = {};
     var withPattern = /\{\{\#with ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/with\}\}/g;
 
     var partials = {};
-    var partialId = 0;
+    var instanceCount = 0;
+    var Template = {};
 
     /**
-     * The Kandybars object
+     * The Kandybars template engine
      * @param name
      * @return {Kandybars}
      * @constructor
      */
-    Kandybars = {
+    var Kandybars = {
         /**
          * Enable or disable the use of cache
          * @type {boolean}
@@ -81,56 +75,6 @@ var Kandybars, Template = {};
          * @type {{}}
          */
         helpers: {},
-
-        /**
-         * Attaches the event to the elements in the template
-         * @param event
-         * @param fn
-         * @param context
-         * @param tpl
-         * @param parent
-         */
-        attachEvent: function (event, fn, context, tpl, parent) {
-            if (typeof fn === 'function') {
-                var events = event.split(',');
-
-                for (var i = 0; i < events.length; i += 1) {
-                    event = events[i];
-                    var parts = event.split(' ', 2);
-                    var action = parts[0];
-                    var selector = parts[1];
-                    var target = selector && tpl.filter(selector);
-
-                    // Check if root node is the target
-                    if (target && target.length === 1) {
-                        tpl = target;
-                        selector = null;
-                    }
-
-                    (function (action, selector) {
-                        // Attach event now and in the future
-                        tpl.on(action, selector, function (ev) {
-                            fn.call(context, ev, tpl, parent);
-                        });
-                    })(action, selector);
-                }
-            }
-        },
-
-        /**
-         * Parses all events in the template
-         * @param events
-         * @param context
-         * @param tpl
-         * @param parent
-         */
-        attachEvents: function (events, context, tpl, parent) {
-            for (var event in events) {
-                if (events.hasOwnProperty(event)) {
-                    Kandybars.attachEvent(event, events[event], context, tpl, parent);
-                }
-            }
-        },
 
         /**
          * Creates and register a new template
@@ -216,34 +160,82 @@ var Kandybars, Template = {};
         },
 
         /**
+         * Returns arguments from string
+         * @example "'arg1' 'arg2' 3 var4"
+         * @param text
+         * @param context
+         * @param parent
+         * @return Array
+         */
+        parseHelperArguments: function (text, context, parent) {
+            var args = [];
+            var split = text.split(' ');
+
+            for (var a = 0; a < split.length; a += 1) {
+                var firstChar = split[a][0];
+                var lastChar = split[a].slice(-1);
+
+                if ((firstChar === '"' || firstChar === "'")
+                    && (firstChar !== lastChar || '\\' + lastChar === split[a].slice(-2))) {
+                    var merge = [split[a]];
+
+                    for (var b = a + 1; b < split.length; b += 1) {
+                        lastChar = split[b].slice(-1);
+                        merge.push(split[b]);
+
+                        // Check if last char matches first char and is not escaped
+                        if (lastChar === firstChar && '\\' + lastChar !== split[b].slice(-2)) {
+                            a = b;
+                            args.push(merge.join(' '));
+                            break;
+                        }
+                    }
+                } else {
+                    args.push(split[a]);
+                }
+            }
+
+            for (var i = 0; i < args.length; i += 1) {
+                var value = Kandybars.parseValue(args[i], context, parent);
+
+                if (/^(["'])[^\1]+?\1$/.test(value)) {
+                    value = value.substring(1, value.length - 1);
+                }
+                args[i] = value;
+            }
+            return args;
+        },
+
+        /**
          * Returns params from string
          * @example "number=123 string='abc' variable=val"
-         * @param params
+         * @param text
          * @param context
+         * @param parent
          * @return {{}}
          */
-        parseParams: function (params, context) {
-            var obj = {};
+        parseHelperParams: function (text, context, parent) {
+            var params = {};
 
-            if (typeof params === 'string') {
-                var p = params.trim().split(' ');
+            if (typeof text === 'string') {
+                var p = text.trim().split(' ');
 
                 for (var i = 0; i < p.length; i += 1) {
                     var param = p[i].trim().split('=', 2);
                     var attr = param[0].trim();
 
                     if (attr === 'this') {
-                        var value = Kandybars.parseValue(param[1], context);
+                        var value = Kandybars.parseValue(param[1], context, parent);
 
                         if (typeof value === 'object') {
-                            obj = $.extend({}, value, obj);
+                            params = extend({}, value, params);
                         }
                     } else {
-                        obj[attr] = Kandybars.parseValue(param[1], context);
+                        params[attr] = Kandybars.parseValue(param[1], context, parent);
                     }
                 }
             }
-            return obj;
+            return params;
         },
 
         /**
@@ -322,6 +314,12 @@ var Kandybars, Template = {};
          * @param callback
          */
         registerHelper: function (name, callback) {
+            if (typeof name !== 'string' || name.length < 1) {
+                throw new Error("invalid helper name");
+            }
+            if (typeof callback !== 'function') {
+                throw new Error("invalid helper callback");
+            }
             Kandybars.helpers[name] = callback;
         },
 
@@ -343,14 +341,14 @@ var Kandybars, Template = {};
             if (!options) {
                 options = {};
             }
-            source = Kandybars.replaceComments(source);
-            source = Kandybars.replaceConditions(source, context, options.parent);
-            source = Kandybars.replaceBlocks(source, context, options.parent);
-            source = Kandybars.replacePartials(source, context, options.parent);
-            source = Kandybars.replaceWith(source, context, options.parent);
-            source = Kandybars.replaceHelpers(source, context, options.parent);
-            source = Kandybars.replaceVars(source, context, options.parent);
-            source = Kandybars.replaceTags(source);
+            source = Kandybars.replaceComments.call(this, source);
+            source = Kandybars.replaceConditions.call(this, source, context, options.parent);
+            source = Kandybars.replaceBlocks.call(this, source, context, options.parent);
+            source = Kandybars.replacePartials.call(this, source, context, options.parent);
+            source = Kandybars.replaceWith.call(this, source, context, options.parent);
+            source = Kandybars.replaceHelpers.call(this, source, context, options.parent);
+            source = Kandybars.replaceVars.call(this, source, context, options.parent);
+            source = Kandybars.replaceTags.call(this, source);
             return source;
         },
 
@@ -436,16 +434,7 @@ var Kandybars, Template = {};
          */
         replaceHelpers: function (source, context, parent) {
             return source.replace(helperPattern, function (match, name, args) {
-                args = args.split(' ');
-
-                for (var i = 0; i < args.length; i += 1) {
-                    var value = Kandybars.parseValue(args[i], context, parent);
-
-                    if (/^(["'])[^\1]+?\1$/.test(value)) {
-                        value = value.substring(1, value.length - 1);
-                    }
-                    args[i] = value;
-                }
+                args = Kandybars.parseHelperArguments(args, context, parent);
 
                 if (Kandybars.helpers[name] === undefined) {
                     throw 'Helper `' + name + '` does not exist';
@@ -470,46 +459,19 @@ var Kandybars, Template = {};
          * @return {string}
          */
         replacePartials: function (source, context, parent) {
+            var self = this;
             return source.replace(partialPattern, function (match, name, params) {
-                var tmpl = Template[name];
-
-                if (!tmpl) {
-                    throw new Error('Partial `' + name + '` does not exist');
-                }
-
-                // Search first node
-                var src = tmpl._source;
-                var nodeIndex = src.indexOf('<');
-                if (nodeIndex === -1) return '';
-
-                // Find a place to put the partial id attribute
-                var closeIndex = src.indexOf('>', nodeIndex);
-                if (closeIndex === -1) return '';
-
                 // Get partial params
-                params = Kandybars.parseParams(params, context) || {};
+                params = Kandybars.parseHelperParams(params, context, parent);
 
                 // Prepare partial context
-                var ctx = $.extend({}, context, tmpl._helpers, params);
+                var ctx = extend({}, context, params);
 
-                partialId += 1;
-                partials[partialId] = {
-                    data: ctx,
-                    events: tmpl._events,
-                    helpers: tmpl._helpers,
-                    name: name,
-                    parent: parent,
-                    rendered: tmpl.rendered
-                };
-
-                // Add the partial id attribute
-                src = [
-                    src.substr(0, closeIndex),
-                    ' data-partial-id="', partialId, '"',
-                    src.substr(closeIndex)
-                ].join('');
-
-                return Kandybars.replaceAll(src, ctx, {parent: parent});
+                return Kandybars.render(name, ctx, {
+                    html: true,
+                    parent: (self instanceof Kandybars.TemplateInstance ? self : parent),
+                    partial: true
+                });
             });
         },
 
@@ -581,76 +543,20 @@ var Kandybars, Template = {};
             if (!this.exists(name)) {
                 throw('The template `' + name + '` does not exist');
             }
-
-            // Create an instance of the template
-            var tmpl = $.extend({}, Template[name]);
-
-            // Prepare options
-            options = $.extend(true, {
-                events: tmpl._events,
-                helpers: tmpl._helpers,
-                name: name,
-                parent: {},
-                rendered: tmpl.rendered,
-                target: null
-            }, options);
-
-            // Merge data and helpers
-            context = $.extend({}, (context || {}), tmpl._helpers);
-
-            return Kandybars.renderHTML(tmpl._source, context, options);
+            return Template[name].createInstance(context, options).render(options);
         },
 
         /**
          * Returns the generated template
-         * @param source
+         * @param html
          * @param context
          * @param options
          * @returns {jQuery}
          */
-        renderHTML: function (source, context, options) {
-            options = $.extend(true, {
-                events: {},
-                parent: {},
-                rendered: null
-            }, options);
-
-            // Generate the template with data
-            var tpl = $(Kandybars.replaceAll(source, context, options));
-
-            // Insert the template in the target
-            if (options.target) {
-                $(options.target).html(tpl);
-            }
-
-            var processPartial = function () {
-                var node = $(this);
-                var partialId = node.attr('data-partial-id');
-                var partial = partials[partialId];
-
-                // Attach events
-                Kandybars.attachEvents(partial.events, partial.data, node, partial.parent);
-
-                // Execute rendered callback
-                if (typeof partial.rendered === 'function') {
-                    partial.rendered.call(node, partial.data);
-                }
-            };
-
-            // Search partial in root node
-            tpl.filter('[data-partial-id]').each(processPartial);
-
-            // Search partials in child nodes
-            tpl.find('[data-partial-id]').each(processPartial);
-
-            // Attach events
-            Kandybars.attachEvents(options.events, context, tpl, options.parent);
-
-            // Execute rendered callback
-            if (typeof options.rendered === 'function') {
-                options.rendered.call(tpl, context);
-            }
-            return tpl;
+        renderHTML: function (html, context, options) {
+            var name = 'tpl_' + Date.now();
+            Kandybars.create(name, html);
+            return Kandybars.render(name, context, options);
         },
 
         /**
@@ -704,17 +610,61 @@ var Kandybars, Template = {};
     };
 
     /**
-     * Creates a template
+     * Template model
      * @param name
      * @param source
      * @constructor
      */
     Kandybars.Template = function (name, source) {
-        this._events = {};
-        this._helpers = {};
-        this._source = source;
-        this.name = name;
-        this.rendered = null;
+        var self = this;
+
+        self._events = {};
+        self._helpers = {};
+        self._source = source;
+        self.name = name;
+        self.rendered = null;
+
+        /**
+         * Returns template events
+         * @return {*}
+         */
+        self.getEvents = function () {
+            return self._events;
+        };
+
+        /**
+         * Returns template helpers
+         * @return {*}
+         */
+        self.getHelpers = function () {
+            return self._helpers;
+        };
+
+        /**
+         * Returns template name
+         * @return {*}
+         */
+        self.getName = function () {
+            return self.name;
+        };
+
+        /**
+         * Returns template source
+         * @return {*}
+         */
+        self.getSource = function () {
+            return self._source;
+        };
+    };
+
+    /**
+     * Creates an instance of the template
+     * @param context
+     * @param options
+     * @return {Kandybars.TemplateInstance}
+     */
+    Kandybars.Template.prototype.createInstance = function (context, options) {
+        return new Kandybars.TemplateInstance(this, context, options);
     };
 
     /**
@@ -746,6 +696,260 @@ var Kandybars, Template = {};
     };
 
     /**
+     * Instance of a template
+     * @param template
+     * @param context
+     * @param options
+     * @constructor
+     */
+    Kandybars.TemplateInstance = function (template, context, options) {
+        var self = this;
+
+        instanceCount += 1;
+
+        options = extend({
+            events: {},
+            helpers: {},
+            parent: null,
+            partial: false,
+            rendered: null
+        }, options);
+
+        var children = [];
+        var id = 'kbti_' + instanceCount;
+        var parent = options.parent;
+
+        if (options.partial) {
+            partials[id] = this;
+        }
+
+        if (parent instanceof Kandybars.TemplateInstance) {
+            parent.getChildren().push(this);
+        }
+
+        /**
+         * Attaches the event to the elements in the template
+         * @param event
+         * @param callback
+         * @param node
+         */
+        self.attachEvent = function (event, callback, node) {
+            if (typeof callback === 'function') {
+                var events = event.split(',');
+
+                for (var i = 0; i < events.length; i += 1) {
+                    event = events[i];
+                    var parts = event.split(' ', 2);
+                    var action = parts[0];
+                    var selector = parts[1];
+                    var target = selector && node.filter(selector);
+
+                    // Check if root node is the target
+                    if (target && target.length === 1) {
+                        node = target;
+                        selector = null;
+                    }
+
+                    (function (action, selector) {
+                        // Attach event now and in the future
+                        node.on(action, selector, function (ev) {
+                            callback.call(self.getContext(), ev, node, self);
+                        });
+                    })(action, selector);
+                }
+            }
+        };
+
+        /**
+         * Parses all events in the template
+         * @param events
+         * @param node
+         */
+        self.attachEvents = function (events, node) {
+            for (var event in events) {
+                if (events.hasOwnProperty(event)) {
+                    self.attachEvent(event, events[event], node);
+                }
+            }
+        };
+
+        /**
+         * Returns template children
+         * @return {Array}
+         */
+        self.getChildren = function () {
+            return children;
+        };
+
+        /**
+         * Returns instance context
+         * @return {*}
+         */
+        self.getContext = function () {
+            return extend({}, context, template._helpers);
+        };
+
+        /**
+         * Returns instance events
+         * @return {*}
+         */
+        self.getEvents = function () {
+            return extend({}, self.getTemplate().getEvents(), options.events);
+        };
+
+        /**
+         * Returns instance helpers
+         * @return {*}
+         */
+        self.getHelpers = function () {
+            return extend({}, self.getTemplate().getHelpers(), options.helpers);
+        };
+
+        /**
+         * Returns the template Id
+         * @return {string}
+         */
+        self.getId = function () {
+            return id;
+        };
+
+        /**
+         * Checks if instance has children
+         * @return {boolean}
+         */
+        self.hasChildren = function () {
+            return children.length > 0;
+        };
+
+        /**
+         * Checks if instance is a partial template
+         * @return {boolean}
+         */
+        self.isPartial = function () {
+            return options.partial === true;
+        };
+
+        /**
+         * Returns the template parent
+         * @return {null|Kandybars.TemplateInstance}
+         */
+        self.getParent = function () {
+            return parent;
+        };
+
+        /**
+         * Returns the template
+         * @return {Kandybars.Template}
+         */
+        self.getTemplate = function () {
+            return template;
+        };
+
+        /**
+         * Executes rendered callbacks
+         * @private
+         */
+        self._rendered = function () {
+            if (typeof options.rendered === 'function') {
+                options.rendered.call(self, self.compiled, self.getContext());
+            }
+            else if (typeof self.getTemplate().rendered === 'function') {
+                self.getTemplate().rendered.call(self, self.compiled, self.getContext());
+            }
+        };
+    };
+
+    /**
+     * Returns a compiled version of the template
+     * @param options
+     * @return {*|HTMLElement}
+     */
+    Kandybars.TemplateInstance.prototype.render = function (options) {
+        options = extend({
+            events: {},
+            helpers: {},
+            html: false,
+            parent: null,
+            rendered: null
+        }, options);
+
+        var self = this;
+        var context = self.getContext();
+        var template = self.getTemplate();
+        var source = template.getSource();
+
+        // Generate template
+        var tpl = Kandybars.replaceAll.call(self, source, context, options);
+
+        if (self.isPartial()) {
+            var partialId = self.getId();
+
+            // Search first node
+            var startIndex = tpl.indexOf('<');
+            var closeIndex = tpl.indexOf('>', startIndex);
+
+            if (startIndex === -1 || closeIndex === -1) {
+                tpl = '<div data-partial-id="' + partialId + '">' + tpl + '</div>';
+            } else {
+                tpl = tpl.substr(0, closeIndex) + ' data-partial-id="' + partialId + '"' + tpl.substr(closeIndex);
+            }
+        }
+        else if (!options.html && $) {
+            // Wrap template with jQuery
+            tpl = $(tpl);
+
+            // Insert the template in the target
+            if (options.target) {
+                $(options.target).html(tpl);
+            }
+
+            var processPartial = function () {
+                var node = $(this);
+                var partialId = node.attr('data-partial-id');
+                var partial = partials[partialId];
+
+                // Overwrite compiled result
+                partial.compiled = $(this);
+
+                // Attach events
+                partial.attachEvents(partial.getEvents(), node);
+
+                // Execute rendered callback
+                partial._rendered();
+            };
+
+            // Search partial in root node
+            tpl.filter('[data-partial-id]').each(processPartial);
+
+            // Search partials in child nodes
+            tpl.find('[data-partial-id]').each(processPartial);
+
+            // Attach events
+            self.attachEvents(self.getEvents(), tpl);
+        }
+
+        self.compiled = tpl;
+
+        if (!options.html) {
+            self._rendered();
+        }
+        return tpl;
+    };
+
+    if (typeof jQuery !== 'undefined') {
+        Kandybars.TemplateInstance.prototype.$ = function (selector) {
+            var tpl = jQuery(this.compiled);
+            return selector !== null ? tpl.find(selector) : tpl;
+        };
+    }
+
+    if (typeof document !== 'undefined') {
+        Kandybars.TemplateInstance.prototype.find = function (selector) {
+            return this.$(selector);
+        };
+    }
+
+    /**
      * Returns the value of the condition
      * @param condition
      * @return {*}
@@ -761,6 +965,27 @@ var Kandybars, Template = {};
         eval('__kbRes = ( ' + condition + ' );');
 
         return __kbRes;
+    }
+
+    /**
+     * Merge objects
+     * @return {*}
+     */
+    function extend() {
+        for (var i = 1; i < arguments.length; i += 1) {
+            for (var key in arguments[i]) {
+                if (arguments[i].hasOwnProperty(key)) {
+                    arguments[0][key] = arguments[i][key];
+                }
+            }
+        }
+        return arguments[0];
+    }
+
+    // Export lib
+    if (typeof window !== 'undefined') {
+        window.Kandybars = Kandybars;
+        window.Template = Template;
     }
 
 }(jQuery));
