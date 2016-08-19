@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-(function ($) {
+(function () {
     'use strict';
 
     var reservedWords = ['abstract', 'arguments', 'boolean', 'break', 'byte',
@@ -125,38 +125,47 @@
 
         /**
          * Loads a file
-         * @param file
+         * @param url
          * @param callback
          */
-        loadFile: function (file, callback) {
-            // Get file type
-            var type = file.substr(file.lastIndexOf('.') + 1);
+        loadFile: function (url, callback) {
+            // Prepare HTTP request
+            var req = new XMLHttpRequest();
+            // todo use cache with Kandybars.cache
+            // Error callback
+            req.onerror = function (ev) {
+                if (typeof callback === 'function') {
+                    callback.call(Kandybars, new Error('Cannot load file : ' + url, ev.target.status));
+                }
+            };
+            // State changed callback
+            req.onreadystatechange = function (ev) {
+                if (req.readyState == 4) {
+                    if (req.status == 200) {
+                        // Get file type
+                        var type = url.substr(url.lastIndexOf('.') + 1);
 
-            $.ajax({
-                method: 'GET',
-                url: file,
-                cache: Kandybars.cache,
-                error: function (xhr, status, err) {
-                    // Execute the callback
-                    if (typeof callback === 'function') {
-                        callback.call(Kandybars, new Error('Cannot load file : ' + file, err));
-                    }
-                },
-                success: function (result) {
-                    switch (type) {
-                        case 'html':
-                        case 'tpl':
-                            // Get templates from file
-                            Kandybars.parseTemplates(result);
-                            break;
-                    }
-
-                    // Execute the callback
-                    if (typeof callback === 'function') {
-                        callback.call(Kandybars, null);
+                        switch (type) {
+                            case 'html':
+                            case 'tpl':
+                                // Get templates from file
+                                Kandybars.parseTemplates(req.responseText);
+                                break;
+                        }
+                        // Execute the callback
+                        if (typeof callback === 'function') {
+                            callback.call(Kandybars, null);
+                        }
+                    } else {
+                        // Execute the callback
+                        if (typeof callback === 'function') {
+                            callback.call(Kandybars, new Error('Cannot load file : ' + url));
+                        }
                     }
                 }
-            });
+            };
+            req.open('GET', url, true);
+            req.send(null);
         },
 
         /**
@@ -894,6 +903,7 @@
                 tpl = tpl.substr(0, closeIndex) + ' data-partial-id="' + partialId + '"' + tpl.substr(closeIndex);
             }
         }
+        // Wrap template using jQuery
         else if (!options.html && $) {
             // Wrap template with jQuery
             tpl = $(tpl);
@@ -988,4 +998,4 @@
         window.Template = Template;
     }
 
-}(jQuery));
+}());
