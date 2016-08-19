@@ -22,8 +22,30 @@
  * SOFTWARE.
  */
 
-(function () {
-    'use strict';
+(function (root, factory) {
+    var k = factory();
+
+    // Export module to AMD
+    if (typeof define === 'function' && define.amd) {
+        define([], function () {
+            root.Kandybars = k;
+            root.Template = k.getTemplatesLogic();
+            return root.Kandybars;
+        });
+    }
+    // Export module to NodeJS/CommonJS
+    else if (typeof module === 'object' && module.exports) {
+        module.exports = {
+            Kandybars: k,
+            Template: k.getTemplatesLogic()
+        };
+    }
+    // Export module to root/window
+    else {
+        root.Kandybars = k;
+        root.Template = k.getTemplatesLogic();
+    }
+}(this, function () {
 
     var reservedWords = ['abstract', 'arguments', 'boolean', 'break', 'byte',
         'case', 'catch', 'char', 'class', 'const',
@@ -121,6 +143,14 @@
                     });
                 }
             }
+        },
+
+        /**
+         * Returns all templates logic
+         * @returns {{}}
+         */
+        getTemplatesLogic: function () {
+            return Template;
         },
 
         /**
@@ -903,39 +933,41 @@
                 tpl = tpl.substr(0, closeIndex) + ' data-partial-id="' + partialId + '"' + tpl.substr(closeIndex);
             }
         }
-        // Wrap template using jQuery
-        else if (!options.html && $) {
+        // Create a DOM version of the version
+        else if (!options.html) {
             // Wrap template with jQuery
-            tpl = $(tpl);
+            if (typeof jQuery !== 'undefined') {
+                tpl = jQuery(tpl);
 
-            // Insert the template in the target
-            if (options.target) {
-                $(options.target).html(tpl);
-            }
+                // Insert the template in the target
+                if (options.target) {
+                    jQuery(options.target).html(tpl);
+                }
 
-            var processPartial = function () {
-                var node = $(this);
-                var partialId = node.attr('data-partial-id');
-                var partial = partials[partialId];
+                var processPartial = function () {
+                    var node = jQuery(this);
+                    var partialId = node.attr('data-partial-id');
+                    var partial = partials[partialId];
 
-                // Overwrite compiled result
-                partial.compiled = $(this);
+                    // Overwrite compiled result
+                    partial.compiled = jQuery(this);
+
+                    // Attach events
+                    partial.attachEvents(partial.getEvents(), node);
+
+                    // Execute rendered callback
+                    partial._rendered();
+                };
+
+                // Search partial in root node
+                tpl.filter('[data-partial-id]').each(processPartial);
+
+                // Search partials in child nodes
+                tpl.find('[data-partial-id]').each(processPartial);
 
                 // Attach events
-                partial.attachEvents(partial.getEvents(), node);
-
-                // Execute rendered callback
-                partial._rendered();
-            };
-
-            // Search partial in root node
-            tpl.filter('[data-partial-id]').each(processPartial);
-
-            // Search partials in child nodes
-            tpl.find('[data-partial-id]').each(processPartial);
-
-            // Attach events
-            self.attachEvents(self.getEvents(), tpl);
+                self.attachEvents(self.getEvents(), tpl);
+            }
         }
 
         self.compiled = tpl;
@@ -946,14 +978,12 @@
         return tpl;
     };
 
+    // Add jQuery selector in template instance
     if (typeof jQuery !== 'undefined') {
         Kandybars.TemplateInstance.prototype.$ = function (selector) {
             var tpl = jQuery(this.compiled);
             return selector !== null ? tpl.find(selector) : tpl;
         };
-    }
-
-    if (typeof document !== 'undefined') {
         Kandybars.TemplateInstance.prototype.find = function (selector) {
             return this.$(selector);
         };
@@ -992,10 +1022,5 @@
         return arguments[0];
     }
 
-    // Export lib
-    if (typeof window !== 'undefined') {
-        window.Kandybars = Kandybars;
-        window.Template = Template;
-    }
-
-}());
+    return Kandybars;
+}));
