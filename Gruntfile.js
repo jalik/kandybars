@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Karl STEIN
+ * Copyright (c) 2016 Karl STEIN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,25 +24,33 @@
 
 module.exports = function (grunt) {
     var srcFile = "src/kandybars.js";
-    var destFile = "build/<%= pkg.name %>-<%= pkg.version %>.min.js";
+    var destFile = "build/<%= pkg.name %>-<%= pkg.version %>.js";
+    var minFile = "build/<%= pkg.name %>-<%= pkg.version %>.min.js";
 
     // Project configuration.
     grunt.initConfig({
         pkg: grunt.file.readJSON("package.json"),
+        copy: {
+            main: {
+                src: srcFile,
+                dest: destFile
+            }
+        },
         uglify: {
             options: {
                 banner: ""
             },
             build: {
                 src: srcFile,
-                dest: destFile
+                dest: minFile
             }
         }
     });
 
     // Load plugins
+    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks("grunt-contrib-uglify");
 
     // Default task(s).
-    grunt.registerTask("default", ["uglify"]);
+    grunt.registerTask("default", ["copy", "uglify"]);
 };
