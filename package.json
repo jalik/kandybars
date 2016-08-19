@@ -1,7 +1,7 @@
 {
   "name": "kandybars",
-  "version": "0.2.8-dev",
-  "description": "Template engine based on jQuery",
+  "version": "0.2.9",
+  "description": "A template engine that tastes good",
   "license": "MIT",
   "author": {
     "name": "Karl STEIN",
