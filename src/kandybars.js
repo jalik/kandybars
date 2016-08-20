@@ -576,7 +576,7 @@
          * @param name
          * @param context
          * @param options
-         * @return {jQuery}
+         * @return {string|*}
          */
         render: function (name, context, options) {
             if (!this.exists(name)) {
@@ -590,12 +590,18 @@
          * @param html
          * @param context
          * @param options
-         * @returns {jQuery}
+         * @returns {string|*}
          */
         renderHTML: function (html, context, options) {
+            // Generate a temporary name
             var name = 'tpl_' + Date.now();
+            // Create and render the template
             Kandybars.create(name, html);
-            return Kandybars.render(name, context, options);
+            var tpl = Kandybars.render(name, context, options);
+            // Delete temporary template
+            // to avoid memory consumption.
+            delete Template[name];
+            return tpl;
         },
 
         /**
