@@ -64,6 +64,7 @@
     // Patterns
     var blockPattern = /\{\{\#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/each\}\}/g;
     var commentPattern = /\{\{\![^}]+?\}\}/g;
+    var evalPattern = /\{\{\eval ([^}]+)\}\}/g;
     var expressionPattern = /\{\{\#if ([^}]+)\}\}((?:(?!\{\{\#if)[\s\S])*?)\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
     var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
@@ -72,7 +73,7 @@
     var templateNamePattern = /name="([^"]+)"/;
     var templateTagsPattern = /<template[^>]*>|<\/template>|/g;
     var valuePattern = /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g;
-    var varPattern = /\{\{((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}/g;
+    var varPattern = /\{\{\{?((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}\}?/g;
     var withPattern = /\{\{\#with ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)\}\}([\s\S]*?)\{\{\/with\}\}/g;
 
     var partials = {};
@@ -202,14 +203,15 @@
          * Returns arguments from string
          * @example "'arg1' 'arg2' 3 var4"
          * @param text
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return Array
          */
-        parseHelperArguments: function (text, context, parent) {
+        parseHelperArguments: function (text, data, options) {
             var args = [];
             var split = text.split(' ');
 
+            // Fetch arguments
             for (var a = 0; a < split.length; a += 1) {
                 var firstChar = split[a][0];
                 var lastChar = split[a].slice(-1);
@@ -234,8 +236,9 @@
                 }
             }
 
+            // Replace arguments
             for (var i = 0; i < args.length; i += 1) {
-                var value = Kandybars.parseValue(args[i], context, parent);
+                var value = Kandybars.parseValue(args[i], data, options);
 
                 if (/^(["'])[^\1]+?\1$/.test(value)) {
                     value = value.substring(1, value.length - 1);
@@ -249,11 +252,11 @@
          * Returns params from string
          * @example "number=123 string='abc' variable=val"
          * @param text
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {{}}
          */
-        parseHelperParams: function (text, context, parent) {
+        parseHelperParams: function (text, data, options) {
             var params = {};
 
             if (typeof text === 'string') {
@@ -264,13 +267,13 @@
                     var attr = param[0].trim();
 
                     if (attr === 'this') {
-                        var value = Kandybars.parseValue(param[1], context, parent);
+                        var value = Kandybars.parseValue(param[1], data, options);
 
                         if (typeof value === 'object') {
                             params = extend({}, value, params);
                         }
                     } else {
-                        params[attr] = Kandybars.parseValue(param[1], context, parent);
+                        params[attr] = Kandybars.parseValue(param[1], data, options);
                     }
                 }
             }
@@ -299,11 +302,11 @@
         /**
          * Returns the parsed value
          * @param value
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {*}
          */
-        parseValue: function (value, context, parent) {
+        parseValue: function (value, data, options) {
             if (value != null) {
                 if (/^(['"])[^\1]+?\1$/.test(value)) {
                     return value.replace(/^['"]/g, '').replace(/['"]$/g, '');
@@ -324,7 +327,9 @@
                     return parseFloat(value);
                 }
 
-                value = Kandybars.resolvePath(value, context, parent);
+                if (pathPattern.test(value)) {
+                    value = Kandybars.resolvePath(value, data, options);
+                }
 
                 if (value != null) {
                     if (/^true$/i.test(value)) {
@@ -365,54 +370,84 @@
         /**
          * Replaces all dynamic elements
          * @param source
-         * @param context
+         * @param data
          * @param options
          * @return {string}
          */
-        replaceAll: function (source, context, options) {
-            if (context) {
-                for (var k in context) {
-                    if (context.hasOwnProperty(k) && typeof context[k] === 'function') {
-                        context[k] = context[k].call(context);
+        replaceAll: function (source, data, options) {
+            if (data) {
+                for (var k in data) {
+                    if (data.hasOwnProperty(k) && typeof data[k] === 'function') {
+                        data[k] = data[k].call(data);
                     }
                 }
             }
             if (!options) {
                 options = {};
             }
-            source = Kandybars.replaceComments.call(this, source);
-            source = Kandybars.replaceConditions.call(this, source, context, options.parent);
-            source = Kandybars.replaceBlocks.call(this, source, context, options.parent);
-            source = Kandybars.replacePartials.call(this, source, context, options.parent);
-            source = Kandybars.replaceWith.call(this, source, context, options.parent);
-            source = Kandybars.replaceHelpers.call(this, source, context, options.parent);
-            source = Kandybars.replaceVars.call(this, source, context, options.parent);
-            source = Kandybars.replaceTags.call(this, source);
+            source = Kandybars.replaceComments.call(this, source, options);
+            source = Kandybars.replaceConditions.call(this, source, data, options);
+            source = Kandybars.replaceBlocks.call(this, source, data, options);
+            source = Kandybars.replacePartials.call(this, source, data, options);
+            source = Kandybars.replaceWith.call(this, source, data, options);
+            source = Kandybars.replaceEvals.call(this, source, data, options);
+            source = Kandybars.replaceHelpers.call(this, source, data, options);
+            source = Kandybars.replaceVars.call(this, source, data, options);
+            source = Kandybars.replaceTags.call(this, source, options);
             return source;
         },
 
         /**
          * Replaces all blocks
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replaceBlocks: function (source, context, parent) {
+        replaceBlocks: function (source, data, options) {
             return source.replace(blockPattern, function (match, path, html) {
-                var object = Kandybars.resolvePath(path, context, parent);
+                var object = Kandybars.resolvePath(path, data, options);
                 var result = '';
+                var blockContext = {};
+                var blockHtml = '';
 
                 if (object != null) {
                     if (object instanceof Array) {
                         for (var i = 0; i < object.length; i += 1) {
-                            result += Kandybars.replaceAll(html.replace('{{@index}}', i), object[i], {parent: context});
+                            blockContext = object[i];
+
+                            if (typeof blockContext === 'object') {
+                                blockContext['@index'] = i;
+                            }
+                            blockHtml = html.replace('{{@index}}', i);
+                            blockHtml = blockHtml.replace('@index', i);
+
+                            result += Kandybars.replaceAll(blockHtml, blockContext, {
+                                special: {'@index': i},
+                                parent: {
+                                    data: data,
+                                    parent: options
+                                }
+                            });
                         }
                     }
                     else if (typeof object === 'object') {
                         for (var key in object) {
                             if (object.hasOwnProperty(key)) {
-                                result += Kandybars.replaceAll(html.replace('{{@key}}', key), object[key], {parent: context});
+                                blockContext = object[key];
+
+                                if (typeof blockContext === 'object') {
+                                    blockContext['@key'] = key;
+                                }
+                                blockHtml = html.replace('{{@key}}', key);
+                                blockHtml = blockHtml.replace('@key', key);
+                                result += Kandybars.replaceAll(blockHtml, blockContext, {
+                                    special: {'@key': key},
+                                    parent: {
+                                        data: data,
+                                        parent: options
+                                    }
+                                });
                             }
                         }
                     }
@@ -424,20 +459,21 @@
         /**
          * Replaces all comments
          * @param source
+         * @param options
          * @return {string}
          */
-        replaceComments: function (source) {
+        replaceComments: function (source, options) {
             return source.replace(commentPattern, '');
         },
 
         /**
          * Replaces all conditions
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replaceConditions: function (source, context, parent) {
+        replaceConditions: function (source, data, options) {
             // Very greedy !!
             while (source.indexOf('{{#if') !== -1) {
                 source = source.replace(expressionPattern, function (match, test, html) {
@@ -448,15 +484,25 @@
                     var html2 = parts[1];
 
                     test = test.replace(valuePattern, function (match, variable) {
-                        return Kandybars.parseValue(variable, context, parent);
+                        return Kandybars.parseValue(variable, data, options);
                     });
 
                     if (evalCondition(test)) {
                         if (typeof html === 'string') {
-                            result = Kandybars.replaceAll(html, context, {parent: parent});
+                            result = Kandybars.replaceAll(html, data, {
+                                parent: {
+                                    data: data,
+                                    parent: options
+                                }
+                            });
                         }
                     } else if (typeof html2 === 'string') {
-                        result = Kandybars.replaceAll(html2, context, {parent: parent});
+                        result = Kandybars.replaceAll(html2, data, {
+                            parent: {
+                                data: data,
+                                parent: options
+                            }
+                        });
                     }
                     return result;
                 });
@@ -465,15 +511,29 @@
         },
 
         /**
-         * Replaces all helpers
+         * Replaces all evaluations
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replaceHelpers: function (source, context, parent) {
+        replaceEvals: function (source, data, options) {
+            return source.replace(evalPattern, function (match, expression) {
+                var args = Kandybars.parseHelperArguments(expression, data, options);
+                return evalCondition(args.join(' '));
+            });
+        },
+
+        /**
+         * Replaces all helpers
+         * @param source
+         * @param data
+         * @param options
+         * @return {string}
+         */
+        replaceHelpers: function (source, data, options) {
             return source.replace(helperPattern, function (match, name, args) {
-                args = Kandybars.parseHelperArguments(args, context, parent);
+                args = Kandybars.parseHelperArguments(args, data, options);
 
                 if (Kandybars.helpers[name] === undefined) {
                     throw 'Helper `' + name + '` does not exist';
@@ -484,7 +544,7 @@
 
                 // Get the value from a function
                 if (typeof result === 'function') {
-                    result = result.apply(context, args);
+                    result = result.apply(data, args);
                 }
                 return result !== undefined && result !== null ? result : '';
             });
@@ -493,22 +553,22 @@
         /**
          * Replaces all partials
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replacePartials: function (source, context, parent) {
+        replacePartials: function (source, data, options) {
             var self = this;
             return source.replace(partialPattern, function (match, name, params) {
                 // Get partial params
-                params = Kandybars.parseHelperParams(params, context, parent);
+                params = Kandybars.parseHelperParams(params, data, options);
 
                 // Prepare partial context
-                var ctx = extend({}, context, params);
+                var context = extend({}, data, params);
 
-                return Kandybars.render(name, ctx, {
+                return Kandybars.render(name, context, {
                     html: true,
-                    parent: (self instanceof Kandybars.TemplateInstance ? self : parent),
+                    parent: (self instanceof Kandybars.TemplateInstance ? self : options),
                     partial: true
                 });
             });
@@ -517,9 +577,10 @@
         /**
          * Replaces all tags
          * @param source
+         * @param options
          * @return {*}
          */
-        replaceTags: function (source) {
+        replaceTags: function (source, options) {
             // Replace checked, disabled and selected tags
             return source.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
         },
@@ -527,13 +588,13 @@
         /**
          * Replaces all variables
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replaceVars: function (source, context, parent) {
+        replaceVars: function (source, data, options) {
             return source.replace(varPattern, function (match, path) {
-                var value = Kandybars.resolvePath(path, context, parent);
+                var value = Kandybars.resolvePath(path, data, options);
                 var type = typeof value;
 
                 if (value != null) {
@@ -544,7 +605,8 @@
                         return value.hasOwnProperty('toString') ? value.toString() : value;
 
                     } else if (type === 'function') {
-                        return value(context, parent);
+                        var parent = options && options.parent ? options.parent : {};
+                        return value(data, parent.data, parent); // todo return parent only as 2nd argument
                     }
                     throw 'Cannot replace var `' + path + '` of type ' + type;
                 }
@@ -555,79 +617,92 @@
         /**
          * Replaces with blocks (custom scope)
          * @param source
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {string}
          */
-        replaceWith: function (source, context, parent) {
+        replaceWith: function (source, data, options) {
             return source.replace(withPattern, function (match, path, html) {
-                var object = Kandybars.resolvePath(path, context, parent);
+                var object = Kandybars.resolvePath(path, data, options);
                 var result = '';
 
                 if (object != null && typeof object === 'object') {
-                    result = Kandybars.replaceAll(html, object, {parent: context});
+                    result = Kandybars.replaceAll(html, object, {
+                        parent: {
+                            data: data,
+                            parent: options
+                        }
+                    });
+                    return result;
                 }
-                return result;
             });
         },
 
         /**
          * Returns the generated template
          * @param name
-         * @param context
+         * @param data
          * @param options
          * @return {string|*}
          */
-        render: function (name, context, options) {
+        render: function (name, data, options) {
             if (!this.exists(name)) {
                 throw('The template `' + name + '` does not exist');
             }
-            return Template[name].createInstance(context, options).render(options);
+            return Template[name].createInstance(data, options).render(options);
         },
 
         /**
          * Returns the generated template
          * @param html
-         * @param context
+         * @param data
          * @param options
          * @returns {string|*}
          */
-        renderHTML: function (html, context, options) {
+        renderHTML: function (html, data, options) {
             // Generate a temporary name
             var name = 'tpl_' + Date.now();
+
             // Create and render the template
             Kandybars.create(name, html);
-            var tpl = Kandybars.render(name, context, options);
-            // Delete temporary template
-            // to avoid memory consumption.
+            var tpl = Kandybars.render(name, data, options);
+
+            // Delete temporary template to avoid memory consumption.
             delete Template[name];
+
             return tpl;
         },
 
         /**
          * Returns the value of a path
          * @param path
-         * @param context
-         * @param parent
+         * @param data
+         * @param options
          * @return {*}
          */
-        resolvePath: function (path, context, parent) {
-            if (path != null && context != null) {
+        resolvePath: function (path, data, options) {
+            options = options || {};
+
+            if (path != null && data != null) {
+                if (options.special && options.special.hasOwnProperty(path)) {
+                    return options.special[path];
+                }
+
                 if (!pathPattern.test(path)) {
                     return null;
                 }
                 if (path === 'this') {
-                    return context;
+                    return data;
                 }
 
-                var obj = context;
+                var obj = data;
 
                 if (path.indexOf('../') == 0) {
-                    obj = parent;
+                    obj = options.parent ? options.parent.data : {};
                     path = path.substring(3);
 
                 } else if (path.indexOf('this.') == 0) {
-                    obj = context;
+                    obj = data;
                     path = path.substring(5);
                 }
 
@@ -641,7 +716,7 @@
 
                             // Get the result of the function
                             if (obj != null && typeof obj === 'function') {
-                                obj = obj.call(context);
+                                obj = obj.call(data);
                             }
                         } else {
                             obj = null;
@@ -704,12 +779,12 @@
 
     /**
      * Creates an instance of the template
-     * @param context
+     * @param data
      * @param options
      * @return {Kandybars.TemplateInstance}
      */
-    Kandybars.Template.prototype.createInstance = function (context, options) {
-        return new Kandybars.TemplateInstance(this, context, options);
+    Kandybars.Template.prototype.createInstance = function (data, options) {
+        return new Kandybars.TemplateInstance(this, data, options);
     };
 
     /**
@@ -743,11 +818,11 @@
     /**
      * Instance of a template
      * @param template
-     * @param context
+     * @param data
      * @param options
      * @constructor
      */
-    Kandybars.TemplateInstance = function (template, context, options) {
+    Kandybars.TemplateInstance = function (template, data, options) {
         var self = this;
 
         instanceCount += 1;
@@ -831,7 +906,7 @@
          * @return {*}
          */
         self.getContext = function () {
-            return extend({}, context, template._helpers);
+            return extend({}, data, template._helpers);
         };
 
         /**
