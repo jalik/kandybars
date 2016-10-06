@@ -67,7 +67,7 @@
     var evalPattern = /\{\{\eval ([^}]+)\}\}/g;
     var expressionPattern = /\{\{\#if ([^}]+)\}\}((?:(?!\{\{\#if)[\s\S])*?)\{\{\/if\}\}/g;
     var helperPattern = /\{\{([a-zA-Z0-9_]+) ([^}]+)\}\}/g;
-    var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*$/;
+    var pathPattern = /^(?:this\.|\.\.\/)?[a-zA-Z_]+(?:\.[a-zA-Z0-9_]+)*$/;
     var partialPattern = /\{\{> *([^ }]+)( +[^}]+)*\}\}/g;
     var templatePattern = /<template[^>]*>([\s\S]*?)<\/template>/g;
     var templateNamePattern = /name="([^"]+)"/;
@@ -177,6 +177,11 @@
                         var type = url.substr(url.lastIndexOf('.') + 1);
 
                         switch (type) {
+                            case 'js':
+                                // Load javascript
+                                eval(req.responseText);
+                                break;
+
                             case 'html':
                             case 'tpl':
                                 // Get templates from file
@@ -311,22 +316,9 @@
                 if (/^(['"])[^\1]+?\1$/.test(value)) {
                     return value.replace(/^['"]/g, '').replace(/['"]$/g, '');
                 }
-                if (/^true$/i.test(value)) {
-                    return true;
-                }
-                if (/^false$/i.test(value)) {
-                    return false;
-                }
                 if (reservedWords.indexOf(value) != -1) {
                     return value;
                 }
-                if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
-                    return parseInt(value);
-                }
-                if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
-                    return parseFloat(value);
-                }
-
                 if (pathPattern.test(value)) {
                     value = Kandybars.resolvePath(value, data, options);
                 }
@@ -365,277 +357,6 @@
                 throw new Error("invalid helper callback");
             }
             Kandybars.helpers[name] = callback;
-        },
-
-        /**
-         * Replaces all dynamic elements
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceAll: function (source, data, options) {
-            if (data) {
-                for (var k in data) {
-                    if (data.hasOwnProperty(k) && typeof data[k] === 'function') {
-                        data[k] = data[k].call(data);
-                    }
-                }
-            }
-            if (!options) {
-                options = {};
-            }
-            source = Kandybars.replaceComments.call(this, source, options);
-            source = Kandybars.replaceConditions.call(this, source, data, options);
-            source = Kandybars.replaceBlocks.call(this, source, data, options);
-            source = Kandybars.replacePartials.call(this, source, data, options);
-            source = Kandybars.replaceWith.call(this, source, data, options);
-            source = Kandybars.replaceEvals.call(this, source, data, options);
-            source = Kandybars.replaceHelpers.call(this, source, data, options);
-            source = Kandybars.replaceVars.call(this, source, data, options);
-            source = Kandybars.replaceTags.call(this, source, options);
-            return source;
-        },
-
-        /**
-         * Replaces all blocks
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceBlocks: function (source, data, options) {
-            return source.replace(blockPattern, function (match, path, html) {
-                var object = Kandybars.resolvePath(path, data, options);
-                var result = '';
-                var blockContext = {};
-                var blockHtml = '';
-
-                if (object != null) {
-                    if (object instanceof Array) {
-                        for (var i = 0; i < object.length; i += 1) {
-                            blockContext = object[i];
-
-                            if (typeof blockContext === 'object') {
-                                blockContext['@index'] = i;
-                            }
-                            blockHtml = html.replace('{{@index}}', i);
-                            blockHtml = blockHtml.replace('@index', i);
-
-                            result += Kandybars.replaceAll(blockHtml, blockContext, {
-                                special: {'@index': i},
-                                parent: {
-                                    data: data,
-                                    parent: options
-                                }
-                            });
-                        }
-                    }
-                    else if (typeof object === 'object') {
-                        for (var key in object) {
-                            if (object.hasOwnProperty(key)) {
-                                blockContext = object[key];
-
-                                if (typeof blockContext === 'object') {
-                                    blockContext['@key'] = key;
-                                }
-                                blockHtml = html.replace('{{@key}}', key);
-                                blockHtml = blockHtml.replace('@key', key);
-                                result += Kandybars.replaceAll(blockHtml, blockContext, {
-                                    special: {'@key': key},
-                                    parent: {
-                                        data: data,
-                                        parent: options
-                                    }
-                                });
-                            }
-                        }
-                    }
-                }
-                return result;
-            });
-        },
-
-        /**
-         * Replaces all comments
-         * @param source
-         * @param options
-         * @return {string}
-         */
-        replaceComments: function (source, options) {
-            return source.replace(commentPattern, '');
-        },
-
-        /**
-         * Replaces all conditions
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceConditions: function (source, data, options) {
-            // Very greedy !!
-            while (source.indexOf('{{#if') !== -1) {
-                source = source.replace(expressionPattern, function (match, test, html) {
-                    var result = '';
-
-                    var parts = html.split('{{else}}');
-                    html = parts[0];
-                    var html2 = parts[1];
-
-                    test = test.replace(valuePattern, function (match, variable) {
-                        return Kandybars.parseValue(variable, data, options);
-                    });
-
-                    if (evalCondition(test)) {
-                        if (typeof html === 'string') {
-                            result = Kandybars.replaceAll(html, data, {
-                                parent: {
-                                    data: data,
-                                    parent: options
-                                }
-                            });
-                        }
-                    } else if (typeof html2 === 'string') {
-                        result = Kandybars.replaceAll(html2, data, {
-                            parent: {
-                                data: data,
-                                parent: options
-                            }
-                        });
-                    }
-                    return result;
-                });
-            }
-            return source;
-        },
-
-        /**
-         * Replaces all evaluations
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceEvals: function (source, data, options) {
-            return source.replace(evalPattern, function (match, expression) {
-                var args = Kandybars.parseHelperArguments(expression, data, options);
-                return evalCondition(args.join(' '));
-            });
-        },
-
-        /**
-         * Replaces all helpers
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceHelpers: function (source, data, options) {
-            return source.replace(helperPattern, function (match, name, args) {
-                args = Kandybars.parseHelperArguments(args, data, options);
-
-                if (Kandybars.helpers[name] === undefined) {
-                    throw 'Helper `' + name + '` does not exist';
-                }
-
-                // Get the helper value
-                var result = Kandybars.helpers[name];
-
-                // Get the value from a function
-                if (typeof result === 'function') {
-                    result = result.apply(data, args);
-                }
-                return result !== undefined && result !== null ? result : '';
-            });
-        },
-
-        /**
-         * Replaces all partials
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replacePartials: function (source, data, options) {
-            var self = this;
-            return source.replace(partialPattern, function (match, name, params) {
-                // Get partial params
-                params = Kandybars.parseHelperParams(params, data, options);
-
-                // Prepare partial context
-                var context = extend({}, data, params);
-
-                return Kandybars.render(name, context, {
-                    html: true,
-                    parent: (self instanceof Kandybars.TemplateInstance ? self : options),
-                    partial: true
-                });
-            });
-        },
-
-        /**
-         * Replaces all tags
-         * @param source
-         * @param options
-         * @return {*}
-         */
-        replaceTags: function (source, options) {
-            // Replace checked, disabled and selected tags
-            return source.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
-        },
-
-        /**
-         * Replaces all variables
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceVars: function (source, data, options) {
-            return source.replace(varPattern, function (match, path) {
-                var value = Kandybars.resolvePath(path, data, options);
-                var type = typeof value;
-
-                if (value != null) {
-                    if (type === 'string' || type === 'number' || type === 'boolean') {
-                        return value;
-
-                    } else if (type === 'object') {
-                        return value.hasOwnProperty('toString') ? value.toString() : value;
-
-                    } else if (type === 'function') {
-                        var parent = options && options.parent ? options.parent : {};
-                        return value(data, parent.data, parent); // todo return parent only as 2nd argument
-                    }
-                    throw 'Cannot replace var `' + path + '` of type ' + type;
-                }
-                return '';
-            });
-        },
-
-        /**
-         * Replaces with blocks (custom scope)
-         * @param source
-         * @param data
-         * @param options
-         * @return {string}
-         */
-        replaceWith: function (source, data, options) {
-            return source.replace(withPattern, function (match, path, html) {
-                var object = Kandybars.resolvePath(path, data, options);
-                var result = '';
-
-                if (object != null && typeof object === 'object') {
-                    result = Kandybars.replaceAll(html, object, {
-                        parent: {
-                            data: data,
-                            parent: options
-                        }
-                    });
-                    return result;
-                }
-            });
         },
 
         /**
@@ -793,9 +514,9 @@
      */
     Kandybars.Template.prototype.events = function (events) {
         if (events !== null && typeof events === 'object') {
-            for (var key in events) {
-                if (events.hasOwnProperty(key)) {
-                    this._events[key] = events[key];
+            for (var action in events) {
+                if (events.hasOwnProperty(action)) {
+                    this._events[action] = events[action];
                 }
             }
         }
@@ -843,8 +564,9 @@
             partials[id] = this;
         }
 
-        if (parent instanceof Kandybars.TemplateInstance) {
-            parent.getChildren().push(this);
+        // Link instance to it's parent
+        if (parent && parent.instance instanceof Kandybars.TemplateInstance) {
+            parent.instance.getChildren().push(this);
         }
 
         /**
@@ -854,6 +576,7 @@
          * @param node
          */
         self.attachEvent = function (event, callback, node) {
+            var self = this;
             if (typeof callback === 'function') {
                 var events = event.split(',');
 
@@ -886,9 +609,9 @@
          * @param node
          */
         self.attachEvents = function (events, node) {
-            for (var event in events) {
-                if (events.hasOwnProperty(event)) {
-                    self.attachEvent(event, events[event], node);
+            for (var action in events) {
+                if (events.hasOwnProperty(action)) {
+                    self.attachEvent(action, events[action], node);
                 }
             }
         };
@@ -954,7 +677,7 @@
          * @return {null|Kandybars.TemplateInstance}
          */
         self.getParent = function () {
-            return parent;
+            return parent && parent.instance;
         };
 
         /**
@@ -999,7 +722,7 @@
         var source = template.getSource();
 
         // Generate template
-        var tpl = Kandybars.replaceAll.call(self, source, context, options);
+        var tpl = self.replaceAll(source, context, options);
 
         if (self.isPartial()) {
             var partialId = self.getId();
@@ -1057,6 +780,281 @@
             self._rendered();
         }
         return tpl;
+    };
+
+
+    /**
+     * Replaces all dynamic elements
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceAll = function (source, data, options) {
+        if (data) {
+            for (var k in data) {
+                if (data.hasOwnProperty(k) && typeof data[k] === 'function') {
+                    data[k] = data[k].call(data);
+                }
+            }
+        }
+        if (!options) {
+            options = {};
+        }
+        source = this.replaceComments(source, options);
+        source = this.replaceConditions(source, data, options);
+        source = this.replaceBlocks(source, data, options);
+        source = this.replacePartials(source, data, options);
+        source = this.replaceWith(source, data, options);
+        source = this.replaceEvals(source, data, options);
+        source = this.replaceHelpers(source, data, options);
+        source = this.replaceVars(source, data, options);
+        source = this.replaceAttributes(source, options);
+        return source;
+    };
+
+    /**
+     * Replaces all attributes
+     * @param source
+     * @param options
+     * @return {*}
+     */
+    Kandybars.TemplateInstance.prototype.replaceAttributes = function (source, options) {
+        // Replace states (checked, disabled and selected)
+        return source.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
+    };
+
+    /**
+     * Replaces all blocks
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceBlocks = function (source, data, options) {
+        var self = this;
+        return source.replace(blockPattern, function (match, path, html) {
+            var object = Kandybars.resolvePath(path, data, options);
+            var result = '';
+            var blockContext = {};
+            var blockHtml = '';
+
+            if (object != null) {
+                if (object instanceof Array) {
+                    for (var i = 0; i < object.length; i += 1) {
+                        blockContext = object[i];
+
+                        if (typeof blockContext === 'object') {
+                            blockContext['@index'] = i;
+                        }
+                        blockHtml = html.replace('{{@index}}', i);
+                        blockHtml = blockHtml.replace('@index', i);
+
+                        result += self.replaceAll(blockHtml, blockContext, {
+                            special: {'@index': i},
+                            parent: {
+                                data: data,
+                                parent: options
+                            }
+                        });
+                    }
+                }
+                else if (typeof object === 'object') {
+                    for (var key in object) {
+                        if (object.hasOwnProperty(key)) {
+                            blockContext = object[key];
+
+                            if (typeof blockContext === 'object') {
+                                blockContext['@key'] = key;
+                            }
+                            blockHtml = html.replace('{{@key}}', key);
+                            blockHtml = blockHtml.replace('@key', key);
+                            result += self.replaceAll(blockHtml, blockContext, {
+                                special: {'@key': key},
+                                parent: {
+                                    data: data,
+                                    parent: options
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            return result;
+        });
+    };
+
+    /**
+     * Replaces all comments
+     * @param source
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceComments = function (source, options) {
+        return source.replace(commentPattern, '');
+    };
+
+    /**
+     * Replaces all conditions
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceConditions = function (source, data, options) {
+        var self = this;
+        // Very greedy !!
+        while (source.indexOf('{{#if') !== -1) {
+            source = source.replace(expressionPattern, function (match, test, html) {
+                var result = '';
+
+                var parts = html.split('{{else}}');
+                html = parts[0];
+                var html2 = parts[1];
+
+                test = test.replace(valuePattern, function (match, variable) {
+                    return Kandybars.parseValue(variable, data, options);
+                });
+
+                if (evalCondition(test)) {
+                    if (typeof html === 'string') {
+                        result = self.replaceAll(html, data, {
+                            parent: {
+                                data: data,
+                                parent: options
+                            }
+                        });
+                    }
+                } else if (typeof html2 === 'string') {
+                    result = self.replaceAll(html2, data, {
+                        parent: {
+                            data: data,
+                            parent: options
+                        }
+                    });
+                }
+                return result;
+            });
+        }
+        return source;
+    };
+
+    /**
+     * Replaces all evaluations
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceEvals = function (source, data, options) {
+        return source.replace(evalPattern, function (match, expression) {
+            var args = Kandybars.parseHelperArguments(expression, data, options);
+            return evalCondition(args.join(' '));
+        });
+    };
+
+    /**
+     * Replaces all helpers
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceHelpers = function (source, data, options) {
+        return source.replace(helperPattern, function (match, name, args) {
+            args = Kandybars.parseHelperArguments(args, data, options);
+
+            if (Kandybars.helpers[name] === undefined) {
+                throw 'Helper `' + name + '` does not exist';
+            }
+
+            // Get the helper value
+            var result = Kandybars.helpers[name];
+
+            // Get the value from a function
+            if (typeof result === 'function') {
+                result = result.apply(data, args);
+            }
+            return result !== undefined && result !== null ? result : '';
+        });
+    };
+
+    /**
+     * Replaces all partials
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replacePartials = function (source, data, options) {
+        var self = this;
+        return source.replace(partialPattern, function (match, name, params) {
+            // Get partial params
+            params = Kandybars.parseHelperParams(params, data, options);
+
+            // Prepare partial context
+            var context = extend({}, data, params);
+
+            return Kandybars.render(name, context, {
+                html: true,
+                parent: extend({}, options, {instance: self}),
+                partial: true
+            });
+        });
+    };
+
+    /**
+     * Replaces all variables
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceVars = function (source, data, options) {
+        return source.replace(varPattern, function (match, path) {
+            var value = Kandybars.resolvePath(path, data, options);
+            var type = typeof value;
+
+            if (value != null) {
+                if (type === 'string' || type === 'number' || type === 'boolean') {
+                    return value;
+
+                } else if (type === 'object') {
+                    return value.hasOwnProperty('toString') ? value.toString() : value;
+
+                } else if (type === 'function') {
+                    var parent = options && options.parent ? options.parent : {};
+                    return value(data, parent.data, parent); // todo return parent only as 2nd argument
+                }
+                throw 'Cannot replace var `' + path + '` of type ' + type;
+            }
+            return '';
+        });
+    };
+
+    /**
+     * Replaces with blocks (custom scope)
+     * @param source
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    Kandybars.TemplateInstance.prototype.replaceWith = function (source, data, options) {
+        var self = this;
+        return source.replace(withPattern, function (match, path, html) {
+            var object = Kandybars.resolvePath(path, data, options);
+            var result = '';
+
+            if (object != null && typeof object === 'object') {
+                result = self.replaceAll(html, object, {
+                    parent: {
+                        data: data,
+                        parent: options
+                    }
+                });
+                return result;
+            }
+        });
     };
 
     // Add jQuery selector in template instance
