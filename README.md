@@ -148,6 +148,23 @@ var tpl = Kandybars.render('interest', {
 });
 ```
 
+## Evaluations
+
+Evals allow to get the result of an expression.
+
+```html
+<template name="formula">
+    <p>x + y - 0.5 = {{eval x + y - 0.5}}</p>
+</template>
+```
+
+```js
+var tpl = Kandybars.render('formula', {
+    x: 100,
+    y: Math.random() * 10
+});
+```
+
 ## Partials
 
 Templates that are already loaded can be included inside other templates by using a special helper.
