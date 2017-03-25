@@ -10,9 +10,9 @@ Each template is wrapped in a **template** html tag and referenced by a unique n
 </template>
 ```
 
-## Create a template in Javascript
+## Create a template in JavaScript
 
-This is not the common way, but you can create a template directly from Javascript.
+This is not the common way, but you can create a template directly from JavaScript.
 
 ```js
 Kandybars.create('welcome', '<p>Welcome</p>');

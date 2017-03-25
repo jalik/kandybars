@@ -1,0 +1,163 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2017 Karl STEIN
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<template name="main">
+    <div>
+        {{> benchmark_section}}
+        <section>
+            <h2>Evals</h2>
+            x = {{x}}, y = {{y}}
+            <br>z = {{eval x + y}} (x + y)
+        </section>
+        <section>
+            <h2>Helpers</h2>
+            {{hello 'http://www.peche.pf/IMG/pdf/brochure_pgem_dec2010_web.pdf' 'Brochure PGEM'}}
+            {{! hello 'One 1 1 l\' axe' 'Two 2' 'Three 3'}}
+        </section>
+        <section>
+            <h2>Iterations : Arrays</h2>
+            <div id="each_array">
+                {{> source_arrays}}
+            </div>
+        </section>
+        <section>
+            <h2>Iterations : Maps</h2>
+            <div id="each_object">
+                {{> source_objects}}
+            </div>
+        </section>
+        <section>
+            <h2>Partials</h2>
+            <div id="partials">
+                {{> source_partials}}
+            </div>
+        </section>
+        <section>
+            <h2>Conditions</h2>
+            <div id="conditions">
+                {{> source_conditions}}
+            </div>
+        </section>
+    </div>
+</template>
+
+<template name="benchmark_section">
+    <section>
+        <h2>Benchmark</h2>
+        <div>
+            <input type="number" min="1" name="bench-iteration" value="10">
+            <button type="button" name="start-bench">Start benchmark</button>
+            <div id="bench-result" class="bench"></div>
+        </div>
+    </section>
+</template>
+
+<template name="benchmark_item">
+    <div>
+        <div><var>x</var> = {{x}}</div>
+        <div><var>y</var> = {{y}}</div>
+        <div><var>z</var> = {{eval x + y}} (x + y)</div>
+        <hr>
+    </div>
+</template>
+
+<template name="bench">
+    <table>
+        {{#each items}}
+        <tr>
+            <td>({{@index}} + 1 = {{eval @index + 1}})</td>
+            <td>{{this}}</td>
+        </tr>
+        {{/each}}
+    </table>
+</template>
+
+<template name="source_arrays">
+    <table>
+        {{#each items}}
+        <tr>
+            <td>({{@index}} + 1 = {{eval @index + 1}})</td>
+            <td>{{this}}</td>
+        </tr>
+        {{/each}}
+    </table>
+</template>
+
+<template name="source_conditions">
+    <div>
+        <p>Single test : <b>{{#if test}}TRUE{{else}}FALSE{{/if}}</b></p>
+        <p>Deep test :
+            <b>
+                {{#if test}}
+                TRUE:{{#if deepTest}}TRUE{{else}}FALSE{{/if}}
+                {{else}}
+                FALSE:{{#if deepTest}}TRUE{{else}}FALSE{{/if}}
+                {{/if}}
+            </b>
+        </p>
+    </div>
+</template>
+
+<template name="source_objects">
+    <table>
+        {{#each obj}}
+        <tr>
+            <td>{{@key}}</td>
+            <td>{{this}}</td>
+        </tr>
+        {{/each}}
+    </table>
+</template>
+
+<template name="source_partials">
+    <div>
+        <button type="button">Add item</button>
+        <ul>
+            {{#each partials}}
+            {{> source_partial_item}}
+            {{/each}}
+        </ul>
+    </div>
+</template>
+
+<template name="source_partial_item">
+    <li>{{value}}
+        <ul>
+            {{#each children}}
+            {{> source_partial_item_child}}
+            {{/each}}
+        </ul>
+    </li>
+</template>
+
+<template name="source_partial_item_child">
+    <li>
+        {{../value}}.{{value}}
+        <ul>
+            {{#each children}}
+            {{> source_partial_item_child}}
+            {{/each}}
+        </ul>
+    </li>
+</template>
