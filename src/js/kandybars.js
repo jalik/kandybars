@@ -405,57 +405,61 @@ const Kandybars = {
     resolvePath: function (path, data, options) {
         options = options || {};
 
-        if (typeof path === "string" && typeof data === "object" && data !== null) {
+        if (typeof path === "string" && data !== null && data !== undefined) {
             // Look for special vars
             if (options.special && options.special.hasOwnProperty(path)) {
                 return options.special[path];
             }
-            // Check path
+            // Check if path is valid
             if (!pathPattern.test(path)) {
                 return null;
             }
+            // Return current context
             if (path === "this") {
                 return data;
             }
 
-            let obj = data;
+            // Find value in context
+            if (typeof data === "object") {
+                let obj = data;
 
-            // Access parent data
-            if (path.indexOf("../") === 0) {
-                if (options.parent && options.parent.parent) {
-                    obj = options.parent.parent.data || {};
-                } else {
-                    obj = {};
+                // Access parent data
+                if (path.indexOf("../") === 0) {
+                    if (options.parent && options.parent.parent) {
+                        obj = options.parent.parent.data || {};
+                    } else {
+                        obj = {};
+                    }
+                    path = path.substring(3);
                 }
-                path = path.substring(3);
-            }
-            // Access current data
-            else if (path.indexOf("this.") === 0) {
-                obj = data;
-                path = path.substring(5);
-            }
+                // Access current data
+                else if (path.indexOf("this.") === 0) {
+                    obj = data;
+                    path = path.substring(5);
+                }
 
-            if (obj !== null) {
-                let parts = path.split(".");
-                let depth = parts.length;
+                if (obj !== null) {
+                    let parts = path.split(".");
+                    let depth = parts.length;
 
-                for (let i = 0; i < depth; i += 1) {
-                    // is Object
-                    if (obj !== null && typeof obj === "object" && obj.hasOwnProperty(parts[i])) {
-                        obj = obj[parts[i]];
+                    for (let i = 0; i < depth; i += 1) {
+                        // is Object
+                        if (obj !== null && typeof obj === "object" && obj.hasOwnProperty(parts[i])) {
+                            obj = obj[parts[i]];
 
-                        // Get the result of the function
-                        if (obj !== null && typeof obj === "function") {
-                            obj = obj.call(data);
+                            // Get the result of the function
+                            if (obj !== null && typeof obj === "function") {
+                                obj = obj.call(data);
+                            }
+                        }
+                        else {
+                            obj = null;
+                            break;
                         }
                     }
-                    else {
-                        obj = null;
-                        break;
-                    }
                 }
+                return obj;
             }
-            return obj;
         }
         return null;
     }
@@ -850,7 +854,7 @@ Kandybars.TemplateInstance.prototype.replaceBlocks = function (source, data, opt
         let blockHtml = '';
 
         if (object !== null && object !== undefined) {
-            if (object instanceof Array) {
+            if (object instanceof Array || typeof object.length === "number") {
                 for (let i = 0; i < object.length; i += 1) {
                     blockContext = object[i];
 
