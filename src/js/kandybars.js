@@ -420,46 +420,51 @@ const Kandybars = {
             }
 
             // Find value in context
-            if (typeof data === "object") {
-                let obj = data;
+            let obj = data;
 
-                // Access parent data
-                if (path.indexOf("../") === 0) {
-                    if (options.parent && options.parent.parent) {
+            // Access parent data
+            if (path.indexOf("../") === 0) {
+                if (options.parent) {
+                    // Get template parent's data
+                    if (options instanceof Kandybars.TemplateInstance) {
                         obj = options.parent.parent.data || {};
-                    } else {
-                        obj = {};
                     }
-                    path = path.substring(3);
-                }
-                // Access current data
-                else if (path.indexOf("this.") === 0) {
-                    obj = data;
-                    path = path.substring(5);
-                }
-
-                if (obj !== null) {
-                    let parts = path.split(".");
-                    let depth = parts.length;
-
-                    for (let i = 0; i < depth; i += 1) {
-                        // is Object
-                        if (obj !== null && typeof obj === "object" && obj.hasOwnProperty(parts[i])) {
-                            obj = obj[parts[i]];
-
-                            // Get the result of the function
-                            if (obj !== null && typeof obj === "function") {
-                                obj = obj.call(data);
-                            }
-                        }
-                        else {
-                            obj = null;
-                            break;
-                        }
+                    // Get block parent's data
+                    else if (options.parent.data) {
+                        obj = options.parent.data || {};
                     }
+                } else {
+                    obj = {};
                 }
-                return obj;
+                path = path.substring(3);
             }
+            // Access current data
+            else if (path.indexOf("this.") === 0) {
+                obj = data;
+                path = path.substring(5);
+            }
+
+            if (obj !== null) {
+                let parts = path.split(".");
+                let depth = parts.length;
+
+                for (let i = 0; i < depth; i += 1) {
+                    // is Object
+                    if (obj !== null && typeof obj === "object" && obj.hasOwnProperty(parts[i])) {
+                        obj = obj[parts[i]];
+
+                        // Get the result of the function
+                        if (obj !== null && typeof obj === "function") {
+                            obj = obj.call(data);
+                        }
+                    }
+                    else {
+                        obj = null;
+                        break;
+                    }
+                }
+            }
+            return obj;
         }
         return null;
     }
@@ -1010,7 +1015,9 @@ Kandybars.TemplateInstance.prototype.replacePartials = function (source, data, o
 
         return Kandybars.render(name, context, {
             html: true,
-            parent: extend({}, options, {instance: self}),
+            parent: extend({}, (options || {}).parent, {
+                instance: self
+            }),
             partial: true
         });
     });

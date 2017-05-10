@@ -27,6 +27,10 @@ Kandybars.registerHelper('hello', function (a, b, c) {
     return [a, b, c].join(', ');
 });
 
+Kandybars.registerHelper('isEqual', function (a, b) {
+    return String(a) === String(b);
+});
+
 Kandybars.load("templates.html", function () {
 
     Template.main.rendered = function (node) {
@@ -36,6 +40,20 @@ Kandybars.load("templates.html", function () {
     Template.main.helpers({
         x: Math.random(),
         y: 20
+    });
+
+    Template.source_helpers.helpers({
+        color: "red",
+        colors: function () {
+            return [
+                {name: "red"},
+                {name: "green"},
+                {name: "blue"},
+            ];
+        },
+        // isEqual: function (a, b) {
+        //     return String(a) === String(b);
+        // }
     });
 
     Template.source_arrays.helpers({

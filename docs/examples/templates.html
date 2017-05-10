@@ -32,8 +32,7 @@
         </section>
         <section>
             <h2>Helpers</h2>
-            {{hello 'http://www.peche.pf/IMG/pdf/brochure_pgem_dec2010_web.pdf' 'Brochure PGEM'}}
-            {{! hello 'One 1 1 l\' axe' 'Two 2' 'Three 3'}}
+            {{> source_helpers}}
         </section>
         <section>
             <h2>Iterations : Arrays</h2>
@@ -102,6 +101,24 @@
         </tr>
         {{/each}}
     </table>
+</template>
+
+<template name="source_helpers">
+    <div>
+        {{hello 'http://www.peche.pf/IMG/pdf/brochure_pgem_dec2010_web.pdf' 'Brochure PGEM'}}
+        {{! hello 'One 1 1 l\' axe' 'Two 2' 'Three 3'}}
+        <ul>
+            {{#each colors}}
+            <li>
+                {{name}} is "{{../color}}" : {{isEqual name ../color}}
+            </li>
+            {{/each}}
+            <li>color: {{color}}</li>
+        </ul>
+        {{#if this.name === "red"}}
+        {{value}}
+        {{/if}}
+    </div>
 </template>
 
 <template name="source_conditions">
