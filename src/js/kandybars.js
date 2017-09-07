@@ -352,10 +352,13 @@ const Kandybars = {
      */
     registerHelper: function (name, callback) {
         if (typeof name !== "string" || name.length < 1) {
-            throw new Error("invalid helper name");
+            throw new Error("helper name must be a string");
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+            throw new Error("helper name is not valid: " + name);
         }
         if (typeof callback !== "function") {
-            throw new Error("invalid helper callback");
+            throw new Error("helper callback must be a function");
         }
         Kandybars.helpers[name] = callback;
     },
@@ -478,6 +481,19 @@ const Kandybars = {
  */
 Kandybars.Template = function (name, source) {
     const self = this;
+
+    if (typeof name !== "string" || name.length < 1) {
+        throw new Error("template name must be a string");
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+        throw new Error("template name is not valid: " + name);
+    }
+    if (typeof source !== "string") {
+        throw new Error("template source must be a string");
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(source)) {
+        throw new Error("template source is not valid: " + source);
+    }
 
     self._events = {};
     self._helpers = {};
