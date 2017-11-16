@@ -1,4 +1,6 @@
 .idea
+.npm
 dist
 node_modules
+npm-debug.log
 *.iml

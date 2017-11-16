@@ -1,42 +1,40 @@
 {
   "name": "kandybars",
-  "version": "0.3.2",
-  "description": "A template engine that tastes good",
-  "main": "dist/js/kandybars.js",
-  "scripts": {
-    "start": "gulp watch",
-    "build": "gulp default",
-    "prepublish": "npm run build && npm test",
-    "test": "mocha"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jalik/kandybars.js.git"
-  },
+  "version": "0.9.0",
+  "description": "A template engine that tastes good.",
+  "license": "MIT",
   "keywords": [
     "engine",
     "handlebars",
     "html",
     "template"
   ],
-  "license": "MIT",
   "author": {
     "name": "Karl STEIN",
     "email": "karl.stein.pro@gmail.com",
     "url": "https://github.com/jalik"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jalik/kandybars.js.git"
+  },
   "bugs": {
     "url": "https://github.com/jalik/kandybars.js/issues"
   },
-  "homepage": "https://github.com/jalik/kandybars.js#readme",
+  "main": "dist/kandybars.js",
+  "scripts": {
+    "build": "./node_modules/.bin/webpack --config webpack.config.js",
+    "build:prod": "./node_modules/.bin/webpack --config webpack.config.js -p",
+    "prepublish": "npm run build && npm run build:prod && npm test",
+    "test": "jest",
+    "watch": "./node_modules/.bin/webpack --config webpack.config.js --watch"
+  },
   "devDependencies": {
-    "babel-preset-es2015": "^6.22.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-concat": "^2.6.1",
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^2.0.1",
-    "gulp-watch": "^4.3.11",
-    "pump": "^1.0.2"
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "jest": "^21.2.1",
+    "webpack": "^3.8.1"
   }
 }
