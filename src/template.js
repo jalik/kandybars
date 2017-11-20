@@ -22,39 +22,31 @@
  * SOFTWARE.
  */
 
+import {Observer} from "jk-observer";
 import Kandybars from "./kandybars";
 import Util from "./lib";
 
 let instanceCount = 0;
 const partials = {};
 
-
 export class Template {
 
-    /**
-     * Template model
-     * @param name
-     * @param source
-     * @constructor
-     */
     constructor(name, source) {
         if (typeof name !== "string" || name.length < 1) {
-            throw new Error("template name must be a string");
+            throw new Error("Template name must be a string");
         }
-        if (!/^[a-zA-Z0-9_]+$/.test(name)) {
-            throw new Error("template name is not valid: " + name);
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+            throw new Error(`Template name "${name}" is not valid`);
         }
         if (typeof source !== "string") {
-            throw new Error("template source must be a string");
+            throw new Error("Template source must be a string");
         }
-        // if (!/^[a-zA-Z0-9_]+$/.test(source)) {
-        //     throw new Error("template source is not valid: " + source);
-        // }
 
         this._events = {};
         this._helpers = {};
         this._source = source;
         this.name = name;
+        this.observer = new Observer(this);
         this.rendered = null;
     }
 
@@ -69,7 +61,7 @@ export class Template {
     }
 
     /**
-     * Defines the events of a template
+     * Defines events of the template
      * @param events
      */
     events(events) {
@@ -100,7 +92,7 @@ export class Template {
 
     /**
      * Returns template name
-     * @return {*}
+     * @return {string}
      */
     getName() {
         return this.name;
@@ -108,14 +100,14 @@ export class Template {
 
     /**
      * Returns template source
-     * @return {*}
+     * @return {string}
      */
     getSource() {
         return this._source;
     }
 
     /**
-     * Defines the helpers of a template
+     * Defines helpers of the template
      * @param helpers
      */
     helpers(helpers) {
@@ -127,18 +119,14 @@ export class Template {
             }
         }
     }
-}
 
+    onRendered(listener) {
+        this.observer.attach("rendered", listener);
+    }
+}
 
 export class TemplateInstance {
 
-    /**
-     * Instance of a template
-     * @param template
-     * @param data
-     * @param options
-     * @constructor
-     */
     constructor(template, data, options) {
         instanceCount += 1;
 
@@ -153,6 +141,7 @@ export class TemplateInstance {
         this.children = [];
         this.data = data;
         this.options = options;
+        this.observer = new Observer(this);
         this.template = template;
 
         this.id = "kbti_" + instanceCount;
@@ -179,6 +168,8 @@ export class TemplateInstance {
         else if (typeof this.getTemplate().rendered === "function") {
             this.getTemplate().rendered.call(this, this.compiled, this.getContext());
         }
+        // Notify listeners
+        this.observer.notify("rendered", this.compiled, this.getContext());
     }
 
     /**

@@ -25,80 +25,74 @@
 export default {
 
     /**
-     * Regexp of a block
+     * Regexp of a block argument
      * @type {RegExp}
      */
-    blockPattern: /{{#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}([\s\S]*?){{\/each}}/g,
+    blockArgumentRegExp: /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g,
 
     /**
-     * Regexp of a comment
+     * Regexp of a comment block
      * @type {RegExp}
      */
-    commentPattern: /{{![^}]+?}}/g,
+    commentBlockRegExp: /{{![^}]+?}}/g,
+
+    /**
+     * Regexp of an condition block
+     * @type {RegExp}
+     */
+    conditionBlockRegExp: /{{#if ([^}]+)}}((?:(?!{{#if)[\s\S])*?){{\/if}}/g,
+
+    /**
+     * Regexp of a template context path
+     * @type {RegExp}
+     */
+    contextPathRegExp: /^(?:this\.|\.\.\/)?[a-zA-Z_][a-zA-Z0-9_]*(?:(?:\[[a-zA-Z0-9_]*])?|\.[a-zA-Z_][a-zA-Z0-9_]*)*$/,
+
+    /**
+     * Regexp of an "each" block
+     * @type {RegExp}
+     */
+    eachBlockRegExp: /{{#each ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}([\s\S]*?){{\/each}}/g,
 
     /**
      * Regexp of an eval block
      * @type {RegExp}
      */
-    evalPattern: /{{eval ([^}]+)}}/g,
+    evalBlockRegExp: /{{eval ([^}]+)}}/g,
 
     /**
-     * Regexp of an expression block
+     * Regexp of a helper block
      * @type {RegExp}
      */
-    expressionPattern: /{{#if ([^}]+)}}((?:(?!{{#if)[\s\S])*?){{\/if}}/g,
+    helperBlockRegExp: /{{([a-zA-Z0-9_]+) ([^}]+)}}/g,
 
     /**
-     * Regexp of a helper
+     * Regexp of a partial block
      * @type {RegExp}
      */
-    helperPattern: /{{([a-zA-Z0-9_]+) ([^}]+)}}/g,
+    partialBlockRegExp: /{{> *([^ }]+)( +[^}]+)*}}/g,
 
     /**
-     * Regexp of a path
+     * Regexp of a template definition
      * @type {RegExp}
      */
-    pathPattern: /^(?:this\.|\.\.\/)?[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)*$/,
-
-    /**
-     * Regexp of a partial
-     * @type {RegExp}
-     */
-    partialPattern: /{{> *([^ }]+)( +[^}]+)*}}/g,
-
-    /**
-     * Regexp of a template block
-     * @type {RegExp}
-     */
-    templatePattern: /<template[^>]*>([\s\S]*?)<\/template>/g,
-
-    /**
-     * Regexp of a template name
-     * @type {RegExp}
-     */
-    templateNamePattern: /name="([^"]+)"/,
+    templateRegExp: /<template[^>]*>([\s\S]*?)<\/template>/g,
 
     /**
      * Regexp of a template tag
      * @type {RegExp}
      */
-    templateTagsPattern: /<template[^>]*>|<\/template>|/g,
+    templateTagsRegExp: /<template[^>]*>|<\/template>/g,
 
     /**
-     * Regexp of a value
+     * Regexp of a variable block
      * @type {RegExp}
      */
-    valuePattern: /\b((?:this\.|\.\.\/)?[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z0-9_$]+)*)\b(?!["'])/g,
+    variableBlockRegExp: /{{{?((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}}?/g,
 
     /**
-     * Regexp of a variable
+     * Regexp of a "with" block
      * @type {RegExp}
      */
-    varPattern: /{{{?((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}}?/g,
-
-    /**
-     * Regexp of a with block
-     * @type {RegExp}
-     */
-    withPattern: /{{#with ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}([\s\S]*?){{\/with}}/g
+    withBlockRegExp: /{{#with ((?:this\.|\.\.\/)?[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)}}([\s\S]*?){{\/with}}/g
 };

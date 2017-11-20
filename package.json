@@ -1,7 +1,7 @@
 {
   "name": "kandybars",
-  "version": "0.9.0",
-  "description": "A template engine that tastes good.",
+  "version": "1.0.0",
+  "description": "A template engine for all purposes.",
   "license": "MIT",
   "keywords": [
     "engine",
@@ -36,5 +36,8 @@
     "babel-preset-env": "^1.6.1",
     "jest": "^21.2.1",
     "webpack": "^3.8.1"
+  },
+  "dependencies": {
+    "jk-observer": "^1.0.0"
   }
 }

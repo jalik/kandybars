@@ -26,7 +26,8 @@ import {Template as KTemplate, TemplateInstance} from "./template";
 import Patterns from "./patterns";
 import Util from "./lib";
 
-const reservedWords = ["abstract", "arguments", "boolean", "break", "byte",
+const reservedWords = [
+    "abstract", "arguments", "boolean", "break", "byte",
     "case", "catch", "char", "class", "const",
     "continue", "debugger", "default", "delete", "do",
     "double", "else", "enum", "eval", "export",
@@ -38,44 +39,114 @@ const reservedWords = ["abstract", "arguments", "boolean", "break", "byte",
     "short", "static", "super", "switch", "synchronized",
     "this", "throw", "throws", "transient", "true",
     "try", "typeof", "let", "void", "volatile",
-    "while", "with", "yield"];
+    "while", "with", "yield"
+];
 
 const Template = {};
 
-
-/**
- * The Kandybars template engine
- */
-export default {
-    /**
-     * Enable or disable the use of cache
-     * @type {boolean}
-     */
-    cache: false,
-
+const Kandybars = {
     /**
      * The built-in helpers
-     * @type {{}}
+     * @type {object}
      */
     helpers: {},
 
     /**
-     * Creates and register a new template
+     * Registers a template
+     * @deprecated
      * @param name
      * @param source
      * @return {Template}
      */
     create(name, source) {
-        return Template[name] = new KTemplate(name, source);
+        console.warn("deprecated method Kandybars.create(), use Kandybars.registerTemplate() instead");
+        return this.registerTemplate(name, source);
     },
 
     /**
      * Checks if a template exists
+     * @deprecated
      * @param name
      * @return {boolean}
      */
     exists(name) {
-        return Template.hasOwnProperty(name);
+        console.warn("deprecated method Kandybars.exists(), use Kandybars.isTemplate() instead");
+        return this.isTemplate(name);
+    },
+
+    /**
+     * Returns block arguments from string
+     * @param text
+     * @return {Array}
+     */
+    fetchBlockArguments(text) {
+        const args = [];
+
+        if (typeof text === "string" && text.length) {
+            text = text.trim();
+        }
+
+        const split = text.split(" ");
+
+        for (let a = 0; a < split.length; a += 1) {
+            let firstChar = split[a][0];
+            let lastChar = split[a].slice(-1);
+
+            if ((firstChar === '"' || firstChar === "'")
+                && (firstChar !== lastChar || "\\" + lastChar === split[a].slice(-2))) {
+                let merge = [split[a]];
+
+                for (let b = a + 1; b < split.length; b += 1) {
+                    lastChar = split[b].slice(-1);
+                    merge.push(split[b]);
+
+                    // Check if last char matches first char and is not escaped
+                    if (lastChar === firstChar && "\\" + lastChar !== split[b].slice(-2)) {
+                        a = b;
+                        args.push(merge.join(" "));
+                        break;
+                    }
+                }
+            } else {
+                args.push(split[a]);
+            }
+        }
+        return args;
+    },
+
+    /**
+     * Returns the template
+     * @param name
+     * @return {Template}
+     */
+    getTemplate(name) {
+        return Template[name];
+    },
+
+    /**
+     * Returns all templates logic
+     * @returns {object}
+     */
+    getTemplatesLogic() {
+        return Template;
+    },
+
+    /**
+     * Checks if helper exists
+     * @param name
+     * @return {boolean}
+     */
+    isHelper(name) {
+        return this.helpers.hasOwnProperty(name) && typeof this.helpers[name] === "function";
+    },
+
+    /**
+     * Checks if template exists
+     * @param name
+     * @return {boolean}
+     */
+    isTemplate(name) {
+        return Template.hasOwnProperty(name) && Template[name] instanceof KTemplate;
     },
 
     /**
@@ -104,23 +175,6 @@ export default {
                 });
             }
         }
-    },
-
-    /**
-     * Returns the template
-     * @param name
-     * @return {Template}
-     */
-    getTemplate(name) {
-        return Template[name];
-    },
-
-    /**
-     * Returns all templates logic
-     * @returns {{}}
-     */
-    getTemplatesLogic() {
-        return Template;
     },
 
     /**
@@ -191,46 +245,21 @@ export default {
     },
 
     /**
-     * Returns arguments from string
-     * @example "'arg1' 'arg2' 3 var4"
+     * Returns block arguments with computed value
+     * @example "arg1 arg2 arg3"
      * @param text
      * @param data
      * @param options
-     * @return Array
+     * @return {Array}
      */
-    parseHelperArguments(text, data, options) {
-        let args = [];
-        let split = text.split(" ");
-
-        // Fetch arguments
-        for (let a = 0; a < split.length; a += 1) {
-            let firstChar = split[a][0];
-            let lastChar = split[a].slice(-1);
-
-            if ((firstChar === '"' || firstChar === "'")
-                && (firstChar !== lastChar || "\\" + lastChar === split[a].slice(-2))) {
-                let merge = [split[a]];
-
-                for (let b = a + 1; b < split.length; b += 1) {
-                    lastChar = split[b].slice(-1);
-                    merge.push(split[b]);
-
-                    // Check if last char matches first char and is not escaped
-                    if (lastChar === firstChar && "\\" + lastChar !== split[b].slice(-2)) {
-                        a = b;
-                        args.push(merge.join(" "));
-                        break;
-                    }
-                }
-            } else {
-                args.push(split[a]);
-            }
-        }
+    parseBlockArguments(text, data, options) {
+        const args = this.fetchBlockArguments(text);
 
         // Replace arguments
         for (let i = 0; i < args.length; i += 1) {
             let value = this.parseValue(args[i], data, options);
 
+            // Unquote string ("test" => test)
             if (/^(["'])[^\1]+?\1$/.test(value)) {
                 value = value.substring(1, value.length - 1);
             }
@@ -240,14 +269,14 @@ export default {
     },
 
     /**
-     * Returns params from string
-     * @example "number=123 string='abc' variable=val"
+     * Returns block params with computed value
+     * @example "a=123 b='abc' c=true" => {a: 123, b: 'abc', c: true}
      * @param text
      * @param data
      * @param options
-     * @return {{}}
+     * @return {object}
      */
-    parseHelperParams(text, data, options) {
+    parseBlockParams(text, data, options) {
         let params = {};
 
         if (typeof text === "string") {
@@ -260,7 +289,7 @@ export default {
                 if (attr === "this") {
                     let value = this.parseValue(param[1], data, options);
 
-                    if (typeof value === "object") {
+                    if (typeof value === "object" && value !== null) {
                         params = Util.extend({}, value, params);
                     }
                 } else {
@@ -272,22 +301,63 @@ export default {
     },
 
     /**
-     * Search and creates templates found in the html
-     * @param html
+     * Returns block arguments with computed value
+     * @deprecated
+     * @param text
+     * @param data
+     * @param options
      * @return {Array}
      */
+    parseHelperArguments(text, data, options) {
+        console.warn("deprecated method Kandybars.parseHelperArguments(), use Kandybars.parseBlockArguments() instead");
+        return this.parseBlockArguments(text, data, options);
+    },
+
+    /**
+     * Returns block params with computed value
+     * @deprecated
+     * @param text
+     * @param data
+     * @param options
+     * @return {Object}
+     */
+    parseHelperParams(text, data, options) {
+        console.warn("deprecated method Kandybars.parseHelperParams(), use Kandybars.parseBlockParams() instead");
+        return this.parseBlockParams(text, data, options);
+    },
+
+    /**
+     * Search and creates templates found in the HTML code
+     * @param html
+     * @return {object}
+     */
     parseTemplates(html) {
-        let models = html.match(Patterns.templatePattern);
+        const templates = {length: 0};
+        const matches = html.match(Patterns.templateRegExp);
 
-        for (let i = 0; i < models.length; i += 1) {
-            let model = models[i];
-            let name = model.match(Patterns.templateNamePattern)[1];
-            let source = model.replace(Patterns.templateTagsPattern, '');
+        for (let i = 0; i < matches.length; i += 1) {
+            const template = matches[i];
+            const nameMatch = template.match(/name=(["'])([^"]+)\1/);
+            const name = nameMatch && nameMatch[2];
 
-            // Creates the template
-            this.create(name, source);
+            // Check template name
+            if (typeof name !== "string" || name.length === 0) {
+                // console.error(template);
+                throw new SyntaxError(`Missing "name" attribute for <template>`);
+            }
+            if (name === "length") {
+                // console.error(template);
+                throw new SyntaxError(`Value of "name" attribute for <template> cannot be "length"`);
+            }
+
+            // Remove template tags
+            const src = template.replace(Patterns.templateTagsRegExp, "");
+
+            // Register template
+            templates[name] = this.registerTemplate(name, src);
+            templates.length += 1;
         }
-        return models;
+        return templates;
     },
 
     /**
@@ -298,38 +368,39 @@ export default {
      * @return {*}
      */
     parseValue(value, data, options) {
-        if (value !== null && value !== undefined) {
-            // Ignore strings
+        if (typeof value === "string") {
+            // Ignore string (ex: "test")
             if (/^(['"])[^\1]+?\1$/.test(value)) {
-                return value.replace(/^['"]/g, '').replace(/['"]$/g, '');
+                // Remove quotes
+                return value.substr(1, value.length - 2);
             }
-            // Ignore operators
+            // Ignore operator
             if (["+", "-", "*", "/"].indexOf(value) !== -1) {
                 return value;
             }
-            // Ignore reserved words
+            // Boolean
+            if (/^true$/i.test(value)) {
+                return true;
+            }
+            if (/^false$/i.test(value)) {
+                return false;
+            }
+            // Float
+            if (/^[+-]?[0-9]*[.,][0-9]+$/.test(value)) {
+                return parseFloat(value.replace(",", "."));
+            }
+            // Integer
+            if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
+                return parseInt(value);
+            }
+            // Ignore reserved word
             if (reservedWords.indexOf(value) !== -1) {
                 return value;
             }
-
-            // Resolve paths
-            if (Patterns.pathPattern.test(value)) {
+            // Resolve path
+            if (Patterns.contextPathRegExp.test(value)) {
                 value = this.resolvePath(value, data, options);
-            }
 
-            if (value !== null && value !== undefined) {
-                if (/^true$/i.test(value)) {
-                    return true;
-                }
-                if (/^false$/i.test(value)) {
-                    return false;
-                }
-                if (/^[+-]?(?:[0-9]+|Infinity)$/.test(value)) {
-                    return parseInt(value);
-                }
-                if (/^[+-]?(?:[0-9]+\.[0-9]+$)/.test(value)) {
-                    return parseFloat(value);
-                }
                 if (typeof value === "string") {
                     value = '"' + value.replace(/"/g, '\\"') + '"';
                 }
@@ -344,16 +415,29 @@ export default {
      * @param callback
      */
     registerHelper(name, callback) {
-        if (typeof name !== "string" || name.length < 1) {
-            throw new Error("helper name must be a string");
+        if (typeof name !== "string" || name.length === 0) {
+            throw new Error("Helper name must be a string");
         }
-        if (!/^[a-zA-Z0-9_]+$/.test(name)) {
-            throw new Error("helper name is not valid: " + name);
+        if (!/^[a-zA-Z_]+[a-zA-Z0-9_]*$/.test(name)) {
+            throw new Error("Helper name is not valid: " + name);
         }
         if (typeof callback !== "function") {
-            throw new Error("helper callback must be a function");
+            throw new Error("Helper callback must be a function");
+        }
+        if (this.isHelper(name)) {
+            console.warn(`Helper "${name}" has been defined already`);
         }
         this.helpers[name] = callback;
+    },
+
+    /**
+     * Registers a template
+     * @param name
+     * @param html
+     * @return {Template}
+     */
+    registerTemplate(name, html) {
+        return Template[name] = new KTemplate(name, html);
     },
 
     /**
@@ -361,13 +445,15 @@ export default {
      * @param name
      * @param data
      * @param options
-     * @return {string|*}
+     * @return {string}
      */
     render(name, data, options) {
-        if (!this.exists(name)) {
-            throw(`The template "${name}" does not exist`);
+        if (!this.isTemplate(name)) {
+            throw new Error(`Template "${name}" does not exist`);
         }
-        return Template[name].createInstance(data, options).render(options);
+        const template = this.getTemplate(name);
+        const tpl = template.createInstance(data, options);
+        return tpl.render(options);
     },
 
     /**
@@ -375,30 +461,26 @@ export default {
      * @param html
      * @param data
      * @param options
-     * @returns {string|*}
+     * @returns {string}
      */
     renderHTML(html, data, options) {
         // Generate a temporary name
-        let name = "tpl_" + Date.now();
+        const name = `tpl_${Date.now()}`;
 
         // Create and render the template
-        this.create(name, html);
-        let tpl = this.render(name, data, options);
-
-        // Delete temporary template to avoid memory consumption.
-        delete Template[name];
-
-        return tpl;
+        const template = new KTemplate(name, html);
+        const tpl = template.createInstance(data, options);
+        return tpl.render(options);
     },
 
     /**
-     * Replaces all dynamic elements
-     * @param source
+     * Replaces all templating elements
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceAll(source, data, options) {
+    replaceAll(src, data, options) {
         if (data) {
             for (let k in data) {
                 if (data.hasOwnProperty(k) && typeof data[k] === "function") {
@@ -409,37 +491,37 @@ export default {
         if (!options) {
             options = {};
         }
-        source = this.replaceComments(source);
-        source = this.replaceConditions(source, data, options);
-        source = this.replaceBlocks(source, data, options);
-        source = this.replacePartials(source, data, options);
-        source = this.replaceWith(source, data, options);
-        source = this.replaceEvals(source, data, options);
-        source = this.replaceHelpers(source, data, options);
-        source = this.replaceVars(source, data, options);
-        source = this.replaceAttributes(source);
-        return source;
+        src = this.replaceComments(src);
+        src = this.replaceConditions(src, data, options);
+        src = this.replaceBlocks(src, data, options);
+        src = this.replacePartials(src, data, options);
+        src = this.replaceWith(src, data, options);
+        src = this.replaceEvals(src, data, options);
+        src = this.replaceHelpers(src, data, options);
+        src = this.replaceVariables(src, data, options);
+        src = this.replaceAttributes(src);
+        return src;
     },
 
     /**
      * Replaces all attributes
-     * @param source
+     * @param src
      * @return {string}
      */
-    replaceAttributes(source) {
+    replaceAttributes(src) {
         // Replace states (checked, disabled and selected)
-        return source.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
+        return src.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
     },
 
     /**
      * Replaces all blocks
-     * @param source
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceBlocks(source, data, options) {
-        return source.replace(Patterns.blockPattern, (match, path, html) => {
+    replaceBlocks(src, data, options) {
+        return src.replace(Patterns.eachBlockRegExp, (match, path, html) => {
             let object = this.resolvePath(path, data, options);
             let result = '';
             let blockContext = {};
@@ -492,24 +574,24 @@ export default {
 
     /**
      * Replaces all comments
-     * @param source
+     * @param src
      * @return {string}
      */
-    replaceComments(source) {
-        return source.replace(Patterns.commentPattern, '');
+    replaceComments(src) {
+        return src.replace(Patterns.commentBlockRegExp, "");
     },
 
     /**
      * Replaces all conditions
-     * @param source
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceConditions(source, data, options) {
+    replaceConditions(src, data, options) {
         // Very greedy !!
-        while (source.indexOf("{{#if") !== -1) {
-            source = source.replace(Patterns.expressionPattern, (match, test, html) => {
+        while (src.indexOf("{{#if") !== -1) {
+            src = src.replace(Patterns.conditionBlockRegExp, (match, test, html) => {
                 let result = '';
 
                 let parts = html.split("{{else}}");
@@ -517,7 +599,7 @@ export default {
                 let html2 = parts[1];
 
                 // Replace variables in condition
-                test = test.replace(Patterns.valuePattern, (match, variable) => {
+                test = test.replace(Patterns.blockArgumentRegExp, (match, variable) => {
                     return this.parseValue(variable, data, options);
                 });
 
@@ -541,39 +623,39 @@ export default {
                 return result;
             });
         }
-        return source;
+        return src;
     },
 
     /**
      * Replaces all evaluations
-     * @param source
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceEvals(source, data, options) {
-        return source.replace(Patterns.evalPattern, (match, expression) => {
+    replaceEvals(src, data, options) {
+        return src.replace(Patterns.evalBlockRegExp, (match, expression) => {
             // Replace variables in expression
-            expression = expression.replace(Patterns.valuePattern, (match, variable) => {
+            expression = expression.replace(Patterns.blockArgumentRegExp, (match, variable) => {
                 return this.parseValue(variable, data, options);
             });
-            const args = this.parseHelperArguments(expression, data, options);
+            const args = this.parseBlockArguments(expression, data, options);
             return Util.evalCondition(args.join(" "));
         });
     },
 
     /**
      * Replaces all helpers
-     * @param source
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceHelpers(source, data, options) {
-        return source.replace(Patterns.helperPattern, (match, name, args) => {
-            args = this.parseHelperArguments(args, data, options);
+    replaceHelpers(src, data, options) {
+        return src.replace(Patterns.helperBlockRegExp, (match, name, args) => {
+            args = this.parseBlockArguments(args, data, options);
 
-            if (this.helpers[name] === undefined) {
+            if (!this.isHelper(name)) {
                 throw new Error(`Helper "${name}" does not exist`);
             }
 
@@ -584,73 +666,89 @@ export default {
             if (typeof result === "function") {
                 result = result.apply(data, args);
             }
-            return result !== undefined && result !== null ? result : '';
+            return result !== undefined && result !== null ? result : "";
         });
     },
 
     /**
-     * Replaces all partials
-     * @param source
+     * Replaces partial blocks
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replacePartials(source, data, options) {
-        return source.replace(Patterns.partialPattern, (match, name, params) => {
-            // Get partial params
-            params = this.parseHelperParams(params, data, options);
+    replacePartials(src, data, options) {
+        return src.replace(Patterns.partialBlockRegExp, (match, name, params) => {
+            params = this.parseBlockParams(params, data, options);
 
             // Prepare partial context
             const context = Util.extend({}, data, params);
 
-            return this.render(name, context, {
+            const value = this.render(name, context, {
                 html: true,
                 parent: Util.extend({}, (options || {}).parent, {instance: this}),
                 partial: true
             });
+            return value !== null ? value : "";
         });
     },
 
     /**
-     * Replaces all variables
-     * @param source
+     * Replaces variable blocks
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceVars(source, data, options) {
-        return source.replace(Patterns.varPattern, (match, path) => {
+    replaceVariables(src, data, options) {
+        return src.replace(Patterns.variableBlockRegExp, (match, path) => {
             let value = this.resolvePath(path, data, options);
-            let type = typeof value;
+            const type = typeof value;
 
-            if (value !== null && value !== undefined) {
-                if (type === "string" || type === "number" || type === "boolean") {
-                    return value;
-                }
-                else if (type === "object") {
-                    return value.hasOwnProperty("toString") ? value.toString() : value;
+            if (value !== null
+                && value !== undefined
+                && type !== "string"
+                && type !== "number"
+                && type !== "boolean") {
+
+                if (type === "object") {
+                    value = value.hasOwnProperty("toString") ? value.toString() : value;
                 }
                 else if (type === "function") {
                     let parent = options && options.parent ? options.parent : {};
-                    return value(data, parent.data, parent); // todo return parent only as 2nd argument
+                    value = value(data, parent.data, parent); // todo return parent only as 2nd argument
+                } else {
+                    throw new Error(`Cannot replace variable "${path}" of type "${type}"`);
                 }
-                throw new Error(`Cannot replace variable "${path}" of type "${type}"`);
             }
-            return "";
+            return value !== null ? value : "";
         });
+    },
+
+    /**
+     * Replaces variable blocks
+     * @deprecated
+     * @param src
+     * @param data
+     * @param options
+     * @return {string}
+     */
+    replaceVars(src, data, options) {
+        console.warn("deprecated method Kandybars.replaceVars(), use Kandybars.replaceVariables() instead");
+        return this.replaceVariables(src, data, options);
     },
 
     /**
      * Replaces with blocks (custom scope)
-     * @param source
+     * @param src
      * @param data
      * @param options
      * @return {string}
      */
-    replaceWith(source, data, options) {
-        return source.replace(Patterns.withPattern, (match, path, html) => {
-            let object = this.resolvePath(path, data, options);
-            let result = '';
+    replaceWith(src, data, options) {
+        return src.replace(Patterns.withBlockRegExp, (match, path, html) => {
+            const object = this.resolvePath(path, data, options);
+            let result = "";
 
             if (object !== null && object !== undefined && typeof object === "object") {
                 result = this.replaceAll(html, object, {
@@ -659,8 +757,8 @@ export default {
                         parent: options
                     }
                 });
-                return result;
             }
+            return result;
         });
     },
 
@@ -680,7 +778,7 @@ export default {
                 return options.special[path];
             }
             // Check if path is valid
-            if (!Patterns.pathPattern.test(path)) {
+            if (!Patterns.contextPathRegExp.test(path)) {
                 return null;
             }
             // Return current context
@@ -718,9 +816,42 @@ export default {
                 let depth = parts.length;
 
                 for (let i = 0; i < depth; i += 1) {
+                    let part = parts[i];
+
+                    if (obj === null || obj === undefined) {
+                        break;
+                    }
+
                     // is Object
-                    if (obj !== null && typeof obj === "object" && obj.hasOwnProperty(parts[i])) {
-                        obj = obj[parts[i]];
+                    if (part.length && typeof obj === "object") {
+                        if (part.indexOf("[") !== -1) {
+                            let indexStart = part.indexOf("[");
+                            let indexEnd = 0;
+                            const partName = part.substr(0, indexStart);
+
+                            if (obj.hasOwnProperty(partName)) {
+                                do {
+                                    indexStart = part.indexOf("[", indexEnd);
+                                    indexEnd = part.indexOf("]", indexStart);
+
+                                    // users[0]
+                                    if (indexStart !== -1 && indexEnd !== -1) {
+                                        let partIndex = part.substr(indexStart + 1, indexEnd - (indexStart + 1));
+
+                                        // users
+                                        if (obj[partName] instanceof Array) {
+                                            obj = obj[partName][partIndex];
+                                        } else {
+                                            obj = obj[partName][partIndex];
+                                        }
+                                    }
+                                } while (indexStart !== -1);
+                            }
+                        } else if (obj.hasOwnProperty(part)) {
+                            obj = obj[part];
+                        } else {
+                            obj = null;
+                        }
 
                         // Get the result of the function
                         if (obj !== null && typeof obj === "function") {
@@ -738,3 +869,14 @@ export default {
         return null;
     }
 };
+
+export default Kandybars;
+
+
+// Expose lib to window
+if (window !== undefined && window.Kandybars === undefined) {
+    window.Kandybars = Kandybars;
+    window.Kandybars.Template = KTemplate;
+    window.Kandybars.TemplateInstance = TemplateInstance;
+    window.Template = Template;
+}
