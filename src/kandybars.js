@@ -829,7 +829,7 @@ const Kandybars = {
 
             const value = this.render(name, context, {
                 html: true,
-                parent: this.extend({}, (options || {}).parent, {instance: this}),
+                parent: this.extend({}, (options || {}).parent, {instance: this}),// fixme this should refer to template instance
                 partial: true
             });
             return value !== null ? value : "";
