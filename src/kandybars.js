@@ -115,6 +115,85 @@ const Kandybars = {
     },
 
     /**
+     * Returns "each" blocks
+     * @param src
+     * @return {Array}
+     */
+    findBlocks(src) {
+        const blocks = [];
+        const startIndexes = [];
+        const endIndexes = [];
+        let tags = [];
+        let startIndex = -1, endIndex = -1;
+
+        do {
+            startIndex = src.indexOf("{{#each", startIndex + 1);
+
+            if (startIndex !== -1) {
+                startIndexes.push(startIndex);
+                tags.push({index: startIndex, isStart: true});
+            }
+        } while (startIndex !== -1);
+
+        do {
+            endIndex = src.indexOf("{{/each}}", endIndex + 1);
+
+            if (endIndex !== -1) {
+                endIndexes.push(endIndex);
+
+                for (let i = 0; i <= tags.length; i += 1) {
+                    if (i >= tags.length) {
+                        tags.push({index: endIndex, isStart: false});
+                        break;
+                    } else if (endIndex < tags[i].index && i > 0) {
+                        tags.splice(i, 0, {index: endIndex, isStart: false});
+                        break;
+                    }
+                }
+            }
+        } while (endIndex !== -1);
+
+        // Check coherence
+        if (startIndexes.length > endIndexes.length) {
+            throw new Error(`Missing closing {{/each}} somewhere`);
+        } else if (startIndexes.length < endIndexes.length) {
+            throw new Error(`Missing opening {{#each ..}} somewhere`);
+        }
+
+        // Extract blocks contents
+        for (let i = 1; i < tags.length; i += 1) {
+            if (!tags[i].isStart && tags[i - 1].isStart) {
+                const contentIndex = src.indexOf("}}", tags[i - 1].index) + 2;
+                const source = src.substring(tags[i - 1].index, tags[i].index + 9);
+                const content = src.substr(contentIndex, tags[i].index - contentIndex);
+                const args = src.substring(tags[i - 1].index + 7, contentIndex - 2);
+                blocks.push({
+                    fromIndex: tags[i - 1].index,
+                    toIndex: tags[i].index,
+                    arguments: args.trim(),
+                    content: content,
+                    source: source
+                });
+                // Remove indexes from list
+                tags.splice(i - 1, 2);
+                i = 0;
+            }
+        }
+
+        // Removes child blocks
+        for (let i = 0; i < blocks.length; i += 1) {
+            for (let j = 0; j < blocks.length; j += 1) {
+                if (blocks[j].fromIndex > blocks[i].fromIndex
+                    && blocks[j].toIndex < blocks[i].toIndex) {
+                    blocks.splice(j, 1);
+                }
+            }
+        }
+
+        return blocks;
+    },
+
+    /**
      * Returns the template
      * @param name
      * @return {Template}
@@ -342,11 +421,9 @@ const Kandybars = {
 
             // Check template name
             if (typeof name !== "string" || name.length === 0) {
-                // console.error(template);
                 throw new SyntaxError(`Missing "name" attribute for <template>`);
             }
             if (name === "length") {
-                // console.error(template);
                 throw new SyntaxError(`Value of "name" attribute for <template> cannot be "length"`);
             }
 
@@ -509,8 +586,8 @@ const Kandybars = {
      * @return {string}
      */
     replaceAttributes(src) {
-        // Replace states (checked, disabled and selected)
-        return src.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, '');
+        // Remove false states (checked, disabled and selected)
+        return src.replace(/(?:disabled|checked|selected)=["'](?:false)?["']/gim, "");
     },
 
     /**
@@ -521,24 +598,35 @@ const Kandybars = {
      * @return {string}
      */
     replaceBlocks(src, data, options) {
-        return src.replace(Patterns.eachBlockRegExp, (match, path, html) => {
-            let object = this.resolvePath(path, data, options);
-            let result = '';
-            let blockContext = {};
-            let blockHtml = '';
+        const blocks = this.findBlocks(src);
 
+        for (let b = 0; b < blocks.length; b += 1) {
+            // Parse arguments
+            const args = blocks[b].arguments;
+            const html = blocks[b].content;
+            let object;
+
+            blocks[b].result = "";
+
+            if (/^[^ ]+ in [^ ]+$/.test(args)) {
+                // todo expose context in a variable (ex: each item in items)
+            }
+            else if (Patterns.contextPathRegExp.test(args)) {
+                object = this.resolvePath(args, data, options);
+            }
+
+            // Loop on values
             if (object !== null && object !== undefined) {
-                if (object instanceof Array || typeof object.length === "number") {
+                if (typeof object.length === "number") {
                     for (let i = 0; i < object.length; i += 1) {
-                        blockContext = object[i];
+                        let blockContext = object[i];
 
                         if (typeof blockContext === "object") {
                             blockContext["@index"] = i;
                         }
-                        blockHtml = html.replace("{{@index}}", i);
+                        let blockHtml = html.replace("{{@index}}", i);
                         blockHtml = blockHtml.replace("@index", String(i));
-
-                        result += this.replaceAll(blockHtml, blockContext, {
+                        blocks[b].result += this.replaceAll(blockHtml, blockContext, {
                             special: {"@index": i},
                             parent: {
                                 data: data,
@@ -550,14 +638,14 @@ const Kandybars = {
                 else if (typeof object === "object") {
                     for (let key in object) {
                         if (object.hasOwnProperty(key)) {
-                            blockContext = object[key];
+                            let blockContext = object[key];
 
                             if (typeof blockContext === "object") {
                                 blockContext["@key"] = key;
                             }
-                            blockHtml = html.replace("{{@key}}", key);
+                            let blockHtml = html.replace("{{@key}}", key);
                             blockHtml = blockHtml.replace("@key", key);
-                            result += this.replaceAll(blockHtml, blockContext, {
+                            blocks[b].result += this.replaceAll(blockHtml, blockContext, {
                                 special: {"@key": key},
                                 parent: {
                                     data: data,
@@ -568,8 +656,11 @@ const Kandybars = {
                     }
                 }
             }
-            return result;
-        });
+
+            // Replace source by compiled code
+            src = src.replace(blocks[b].source, blocks[b].result);
+        }
+        return src;
     },
 
     /**
@@ -592,7 +683,7 @@ const Kandybars = {
         // Very greedy !!
         while (src.indexOf("{{#if") !== -1) {
             src = src.replace(Patterns.conditionBlockRegExp, (match, test, html) => {
-                let result = '';
+                let result = "";
 
                 let parts = html.split("{{else}}");
                 html = parts[0];

@@ -144,7 +144,7 @@ export class TemplateInstance {
         this.observer = new Observer(this);
         this.template = template;
 
-        this.id = "kbti_" + instanceCount;
+        this.id = `kbti_${instanceCount}`;
         this.parent = options.parent;
 
         if (options.partial) {

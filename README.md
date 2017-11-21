@@ -1,4 +1,6 @@
-# Kandybars.js
+# kandybars
+
+A template engine for all purposes.
 
 ## Create a template in HTML
 
@@ -15,7 +17,9 @@ Each template is wrapped in a **template** html tag and referenced by a unique n
 This is not the common way, but you can create a template directly from JavaScript.
 
 ```js
-Kandybars.create('welcome', '<p>Welcome</p>');
+import Kandybars from "kandybars";
+
+Kandybars.registerTemplate('welcome', '<p>Welcome</p>');
 ```
 
 ## Load templates from a file
@@ -24,6 +28,8 @@ A single HTML file can contain several <template> tags, you just have to call th
 The callback is executed when the file has been loaded,in the callback, **this** refers to the **Kandybars** object.
 
 ```js
+import Kandybars from "kandybars";
+
 // Load a file
 Kandybars.load('relative/path/to/template', function() {
     console.log('Template is loaded');
@@ -44,6 +50,8 @@ Kandybars.load([
 You can also load templates contained in a string by parsing it.
 
 ```js
+import Kandybars from "kandybars";
+
 Kandybars.parseTemplates('<template name="hello">Hello World</template>');
 Kandybars.render('hello');
 ```
@@ -54,7 +62,7 @@ All comments are removed from the code when the template is rendered.
 
 ```html
 <template name="secret">
-    {{! this comment will not appears in the final HTML}}
+    {{! this comment will not appear in the final HTML}}
     <p>{{secret}}</p>
 </template>
 ```
@@ -63,20 +71,19 @@ All comments are removed from the code when the template is rendered.
 
 ```html
 <template name="hello">
-    <p>Hello {{user.firstname}} {{user.name}}</p>
+    <p>Hello {{user.name}}</p>
 </template>
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 var tpl = Kandybars.render('hello', {
-    user: {
-        firstname: "Bob"
-        name: "Marley"
-    }
+    user: {name: "Karl"}
 });
 ```
 
-## Iteratives blocks
+## For-Each blocks
 
 Loops are done easily using javascript arrays.
 
@@ -91,6 +98,8 @@ Loops are done easily using javascript arrays.
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 var tpl = Kandybars.render('colors', {
     colors: [
         {
@@ -124,6 +133,8 @@ It is possible to display data depending of the result of an expression.
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 var tpl = Kandybars.render('messageCounter', {
     messageCount: 19
 });
@@ -140,9 +151,12 @@ Helpers are like functions but they are used directly inside templates, they acc
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 Kandybars.registerHelper('uppercase', function(word) {
-    return word ? word.toUpperCase() : '';
+    return word ? word.toUpperCase() : "";
 });
+
 var tpl = Kandybars.render('interest', {
     interest: "coding"
 });
@@ -159,6 +173,8 @@ Evals allow to get the result of an expression.
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 var tpl = Kandybars.render('formula', {
     x: 100,
     y: Math.random() * 10
@@ -184,6 +200,8 @@ Templates that are already loaded can be included inside other templates by usin
 ```
 
 ```js
+import Kandybars from "kandybars";
+
 var tpl = Kandybars.render('colors', {
     colors: [
         {
@@ -201,3 +219,15 @@ var tpl = Kandybars.render('colors', {
     ]
 });
 ```
+
+## Changelog
+
+### Version 0.9.0
+
+## License
+
+The code is released under the [MIT License](http://www.opensource.org/licenses/MIT).
+
+If you find this lib useful and would like to support my work, donations are welcome :)
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SS78MUMW8AH4N)

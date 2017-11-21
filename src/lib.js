@@ -33,7 +33,7 @@ export default {
 
         if (typeof condition === "string" && condition.length > 0) {
             // Remove carrier returns that could break evaluation
-            condition = condition.replace(/[\r\n]/g, '');
+            condition = condition.replace(/[\r\n]/g, "");
         }
 
         eval(`__kbRes = ( ${condition} );`);

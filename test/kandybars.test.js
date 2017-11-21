@@ -39,6 +39,51 @@ describe(`fetchBlockArguments()`, () => {
     });
 });
 
+describe(`findBlocks()`, () => {
+
+    it(`should return "each" blocks`, () => {
+        const html = "<ul>{{#each colors}}<li>{{color}}</li>{{/each}}</ul>" +
+            "<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul>";
+        expect(Kandybars.findBlocks(html)).toEqual([
+            {
+                fromIndex: 4,
+                toIndex: 38,
+                arguments: "colors",
+                content: "<li>{{color}}</li>",
+                source: "{{#each colors}}<li>{{color}}</li>{{/each}}"
+            },
+            {
+                fromIndex: 56,
+                toIndex: 88,
+                arguments: "sizes",
+                content: "<li>{{size}}</li>",
+                source: "{{#each sizes}}<li>{{size}}</li>{{/each}}"
+            }
+        ]);
+    });
+
+    it(`should return only "each" root blocks`, () => {
+        const html = "<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>" +
+            "<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>";
+        expect(Kandybars.findBlocks(html)).toEqual([
+            {
+                fromIndex: 4,
+                toIndex: 88,
+                arguments: "colors",
+                content: "<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>",
+                source: "{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}"
+            },
+            {
+                fromIndex: 106,
+                toIndex: 190,
+                arguments: "colors",
+                content: "<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>",
+                source: "{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}"
+            }
+        ]);
+    });
+});
+
 describe(`parseBlockArguments()`, () => {
 
     it(`should return parsed arguments`, () => {
@@ -128,19 +173,36 @@ describe(`replaceComments()`, () => {
 
 describe(`replaceBlocks()`, () => {
 
-    it(`should replace "each" blocks with primitive values`, () => {
+    it(`should replace blocks containing primitive values`, () => {
         const data = {colors: ["red", "white", "blue"]};
-        const html = "<div>{{#each colors}}<b>{{this}}</b>{{/each}}</div>";
-        expect(Kandybars.replaceBlocks(html, data)).toEqual(`<div><b>${data.colors[0]}</b><b>${data.colors[1]}</b><b>${data.colors[2]}</b></div>`);
+        const html = "<ul>{{#each colors}}<li>{{this}}</li>{{/each}}</ul>";
+        const compiled = `<ul><li>${data.colors[0]}</li><li>${data.colors[1]}</li><li>${data.colors[2]}</li></ul>`;
+        expect(Kandybars.replaceBlocks(html, data)).toEqual(compiled);
     });
 
-    it(`should replace "each" blocks with objects`, () => {
+    it(`should replace blocks containing objects`, () => {
         const data = {colors: [{name: "red"}, {name: "white"}, {name: "blue"}]};
-        const html = "<div>{{#each colors}}<b>{{name}}</b>{{/each}}</div>";
-        expect(Kandybars.replaceBlocks(html, data)).toEqual(`<div><b>${data.colors[0].name}</b><b>${data.colors[1].name}</b><b>${data.colors[2].name}</b></div>`);
+        const html = "<ul>{{#each colors}}<li>{{name}}</li>{{/each}}</ul>";
+        const compiled = `<ul><li>${data.colors[0].name}</li><li>${data.colors[1].name}</li><li>${data.colors[2].name}</li></ul>`;
+        expect(Kandybars.replaceBlocks(html, data)).toEqual(compiled);
     });
 
-    it(`should remove unused "each" blocks`, () => {
+    it(`should replace nested blocks`, () => {
+        const data = {items: [{num: 1, children: [{num: 1}]}]};
+        const html = "<ul>{{#each items}}<li>{{num}}<ul>{{#each children}}<li>{{num}}</li>{{/each}}</ul></li>{{/each}}</ul>";
+        const compiled = `<ul><li>${data.items[0].num}<ul><li>${data.items[0].children[0].num}</li></ul></li></ul>`;
+        expect(Kandybars.replaceBlocks(html, data)).toEqual(compiled);
+    });
+
+    it(`should replace separate blocks`, () => {
+        const data = {a: [{num: 100}], b: [{num: 200}]};
+        const html = "<ul>{{#each a}}<li>{{num}}</li>{{/each}}</ul>" +
+            "<ul>{{#each b}}<li>{{num}}</li>{{/each}}</ul>";
+        const compiled = `<ul><li>${data.a[0].num}</li></ul><ul><li>${data.b[0].num}</li></ul>`;
+        expect(Kandybars.replaceBlocks(html, data)).toEqual(compiled);
+    });
+
+    it(`should remove unused blocks`, () => {
         const html = "<div>{{#each colors}}<b>{{name}}</b>{{/each}}</div>";
         expect(Kandybars.replaceBlocks(html)).toEqual(`<div></div>`);
     });
