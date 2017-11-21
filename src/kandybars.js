@@ -24,7 +24,6 @@
 
 import {Template as KTemplate, TemplateInstance} from "./template";
 import Patterns from "./patterns";
-import Util from "./lib";
 
 const reservedWords = [
     "abstract", "arguments", "boolean", "break", "byte",
@@ -64,6 +63,24 @@ const Kandybars = {
     },
 
     /**
+     * Returns the value of the condition
+     * @param condition
+     * @return {*}
+     */
+    evalCondition(condition) {
+        let __kbRes = undefined;
+
+        if (typeof condition === "string" && condition.length > 0) {
+            // Remove carrier returns that could break evaluation
+            condition = condition.replace(/[\r\n]/g, "");
+        }
+
+        eval(`__kbRes = ( ${condition} );`);
+
+        return __kbRes;
+    },
+
+    /**
      * Checks if a template exists
      * @deprecated
      * @param name
@@ -72,6 +89,41 @@ const Kandybars = {
     exists(name) {
         console.warn("deprecated method Kandybars.exists(), use Kandybars.isTemplate() instead");
         return this.isTemplate(name);
+    },
+
+    /**
+     * Merge objects
+     * @return {*}
+     */
+    extend() {
+        const args = Array.prototype.slice.call(arguments);
+        let recursive = false;
+        let a = args.shift();
+
+        if (typeof a === "boolean") {
+            recursive = a;
+            a = args.shift();
+        }
+
+        for (let i = 0; i < args.length; i += 1) {
+            const b = args[i];
+
+            if (typeof b === "object" && b !== null && b !== undefined
+                && typeof a === "object" && a !== null && a !== undefined) {
+                for (let key in b) {
+                    if (b.hasOwnProperty(key)) {
+                        if (recursive && typeof b[key] === "object" && b[key] !== null && b[key] !== undefined) {
+                            a[key] = this.extend(a[key], b[key]);
+                        } else {
+                            a[key] = b[key];
+                        }
+                    }
+                }
+            } else if (b !== null && b !== undefined) {
+                a = b;
+            }
+        }
+        return a;
     },
 
     /**
@@ -369,7 +421,7 @@ const Kandybars = {
                     let value = this.parseValue(param[1], data, options);
 
                     if (typeof value === "object" && value !== null) {
-                        params = Util.extend({}, value, params);
+                        params = this.extend({}, value, params);
                     }
                 } else {
                     params[attr] = this.parseValue(param[1], data, options);
@@ -694,7 +746,7 @@ const Kandybars = {
                     return this.parseValue(variable, data, options);
                 });
 
-                if (Util.evalCondition(test)) {
+                if (this.evalCondition(test)) {
                     if (typeof html === "string") {
                         result = this.replaceAll(html, data, {
                             parent: {
@@ -731,7 +783,7 @@ const Kandybars = {
                 return this.parseValue(variable, data, options);
             });
             const args = this.parseBlockArguments(expression, data, options);
-            return Util.evalCondition(args.join(" "));
+            return this.evalCondition(args.join(" "));
         });
     },
 
@@ -773,11 +825,11 @@ const Kandybars = {
             params = this.parseBlockParams(params, data, options);
 
             // Prepare partial context
-            const context = Util.extend({}, data, params);
+            const context = this.extend({}, data, params);
 
             const value = this.render(name, context, {
                 html: true,
-                parent: Util.extend({}, (options || {}).parent, {instance: this}),
+                parent: this.extend({}, (options || {}).parent, {instance: this}),
                 partial: true
             });
             return value !== null ? value : "";

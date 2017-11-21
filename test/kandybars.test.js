@@ -27,8 +27,7 @@ import Kandybars from "../src/kandybars";
 describe(`Kandybars`, () => {
 
     it(`should be importable from package`, () => {
-        expect(Kandybars.render).not.toBe(null);
-        expect(Kandybars.render).not.toBe(undefined);
+        expect(typeof Kandybars.render).toEqual("function");
     });
 });
 

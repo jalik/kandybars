@@ -1,4 +1,4 @@
-# kandybars
+# Kandybars
 
 A template engine for all purposes.
 
@@ -222,7 +222,8 @@ var tpl = Kandybars.render('colors', {
 
 ## Changelog
 
-### Version 0.9.0
+### v0.9.0
+- Uses ES6 import/export syntax
 
 ## License
 
@@ -230,4 +231,4 @@ The code is released under the [MIT License](http://www.opensource.org/licenses/
 
 If you find this lib useful and would like to support my work, donations are welcome :)
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SS78MUMW8AH4N)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=7UABXKNGPQBVJ)
