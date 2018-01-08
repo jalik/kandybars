@@ -31,7 +31,7 @@ Kandybars.registerHelper('isEqual', function (a, b) {
     return String(a) === String(b);
 });
 
-Kandybars.load("templates.html", function () {
+Kandybars.load("/templates/templates.html", function () {
 
     Template.main.rendered = function (node) {
         console.log('Event rendered');
@@ -165,6 +165,7 @@ Kandybars.load("templates.html", function () {
             ];
         }
     });
+
     Template.source_partials.events({
         "click button": function (ev, tpl) {
             count += 1;

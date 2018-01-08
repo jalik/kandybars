@@ -25,6 +25,7 @@
 const path = require("path");
 const Package = require("./package.json");
 const isProd = process.argv.indexOf("-p") !== -1;
+const isHTTPS = process.argv.indexOf("--https") !== -1;
 const filename = Package.name + (isProd ? ".min" : "");
 
 module.exports = {
@@ -35,6 +36,14 @@ module.exports = {
         libraryTarget: "umd",
         path: path.join(__dirname, "dist"),
         filename: `${filename}.js`
+    },
+    devServer: {
+        hot: true,
+        host: "0.0.0.0",
+        port: isHTTPS ? 3443 : 3000,
+        contentBase: path.join(__dirname, "docs"),
+        publicPath: `/`,
+        watchContentBase: true
     },
     resolve: {
         extensions: [".js"],

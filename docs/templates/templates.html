@@ -25,49 +25,63 @@
 <template name="main">
     <div>
         {{> benchmark_section}}
-        <section>
-            <h2>Evals</h2>
-            x = {{x}}, y = {{y}}
-            <br>z = {{eval x + y}} (x + y)
-        </section>
-        <section>
-            <h2>Helpers</h2>
-            {{> source_helpers}}
-        </section>
-        <section>
-            <h2>Iterations : Arrays</h2>
-            <div id="each_array">
-                {{> source_arrays}}
+        <section class="section">
+            <div class="section-content">
+                <h2>Evals</h2>
+                x = {{x}}, y = {{y}}
+                <br>z = {{eval x + y}} (x + y)
             </div>
         </section>
-        <section>
-            <h2>Iterations : Maps</h2>
-            <div id="each_object">
-                {{> source_objects}}
+        <section class="section">
+            <div class="section-content">
+                <h2>Helpers</h2>
+                {{> source_helpers}}
             </div>
         </section>
-        <section>
-            <h2>Partials</h2>
-            <div id="partials">
-                {{> source_partials}}
+        <section class="section">
+            <div class="section-content">
+                <h2>Iterations : Arrays</h2>
+                <div id="each_array">
+                    {{> source_arrays}}
+                </div>
             </div>
         </section>
-        <section>
-            <h2>Conditions</h2>
-            <div id="conditions">
-                {{> source_conditions}}
+        <section class="section">
+            <div class="section-content">
+                <h2>Iterations : Maps</h2>
+                <div id="each_object">
+                    {{> source_objects}}
+                </div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="section-content">
+                <h2>Partials</h2>
+                <div id="partials">
+                    {{> source_partials}}
+                </div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="section-content">
+                <h2>Conditions</h2>
+                <div id="conditions">
+                    {{> source_conditions}}
+                </div>
             </div>
         </section>
     </div>
 </template>
 
 <template name="benchmark_section">
-    <section>
-        <h2>Benchmark</h2>
-        <div>
-            <input type="number" min="1" name="bench-iteration" value="10">
-            <button type="button" name="start-bench">Start benchmark</button>
-            <div id="bench-result" class="bench"></div>
+    <section class="section">
+        <div class="section-content">
+            <h2>Benchmark</h2>
+            <div>
+                <input type="number" min="1" name="bench-iteration" value="10">
+                <button type="button" name="start-bench">Start benchmark</button>
+                <div id="bench-result" class="bench"></div>
+            </div>
         </div>
     </section>
 </template>
