@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2017 Karl STEIN
+ * Copyright (c) 2018 Karl STEIN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,26 +28,23 @@ const isProd = process.argv.indexOf("-p") !== -1;
 const isHTTPS = process.argv.indexOf("--https") !== -1;
 const filename = Package.name + (isProd ? ".min" : "");
 
+const paths = {
+    dist: path.join(__dirname, "aio"),
+    docs: path.join(__dirname, "docs"),
+    src: path.join(__dirname, "src"),
+};
+
 module.exports = {
     entry: {
-        bundle: path.join(__dirname, "src", `${Package.name}.js`)
-    },
-    output: {
-        libraryTarget: "umd",
-        path: path.join(__dirname, "dist"),
-        filename: `${filename}.js`
+        bundle: path.join(paths.src, `${Package.name}.js`)
     },
     devServer: {
         hot: true,
         host: "0.0.0.0",
         port: isHTTPS ? 3443 : 3000,
-        contentBase: path.join(__dirname, "docs"),
-        publicPath: `/`,
+        contentBase: paths.docs,
+        publicPath: "/",
         watchContentBase: true
-    },
-    resolve: {
-        extensions: [".js"],
-        modules: [path.join(__dirname, "src"), "node_modules"]
     },
     module: {
         rules: [
@@ -57,5 +54,14 @@ module.exports = {
                 loader: "babel-loader"
             }
         ]
+    },
+    output: {
+        libraryTarget: "umd",
+        path: paths.dist,
+        filename: `${filename}.js`
+    },
+    resolve: {
+        extensions: [".js"],
+        modules: [paths.src, "node_modules"]
     }
 };

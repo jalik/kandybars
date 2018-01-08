@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2017 Karl STEIN
+ * Copyright (c) 2018 Karl STEIN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -935,12 +935,13 @@ const Kandybars = {
             // Access parent data
             if (path.indexOf("../") === 0) {
                 if (options.parent) {
-                    // Get template parent's data
-                    if (options instanceof TemplateInstance) {
-                        obj = options.parent.parent.data || {};
-                    }
+                    // todo Get template parent's data
+                    // if (options.parent instanceof TemplateInstance) {
+                    //     obj = options.parent.parent.data || {};
+                    // }
                     // Get block parent's data
-                    else if (options.parent.data) {
+                    // else
+                    if (options.parent.data) {
                         obj = options.parent.data || {};
                     }
                 } else {

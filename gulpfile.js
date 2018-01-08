@@ -22,24 +22,29 @@
  * SOFTWARE.
  */
 
-import {Template} from "../src/template";
+const gulp = require("gulp");
+const babel = require("gulp-babel");
+const stripComments = require("gulp-strip-comments");
+const watch = require("gulp-watch");
+const distPath = "dist";
 
-const templateName = "test";
-const variabletemplateSource = "<div>{{variable}}</div>";
+// Compile JavaScript files
+gulp.task("build", () => {
+    return gulp.src([
+        "src/**/*.js"
+    ])
+        .pipe(babel({presets: ["env"]}))
+        .pipe(stripComments())
+        .pipe(gulp.dest(distPath));
+});
 
-describe(`Template`, () => {
+// Compile source files
+gulp.task("default", ["build"]);
 
-    const tpl = new Template(templateName, variabletemplateSource);
+// Prepare files for publication
+gulp.task("prepublish", ["build"]);
 
-    it(`should be importable from package`, () => {
-        expect(typeof Template).toEqual("function");
-    });
-
-    it(`getName() should return a string`, () => {
-        expect(tpl.getName()).toEqual(templateName);
-    });
-
-    it(`getSource() should return a string`, () => {
-        expect(tpl.getSource()).toEqual(variabletemplateSource);
-    });
+// Rebuild automatically
+gulp.task("watch", () => {
+    gulp.watch(["src/**/*.js"], ["build"]);
 });
