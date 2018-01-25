@@ -108,18 +108,18 @@ const Kandybars = {
         for (let i = 0; i < args.length; i += 1) {
             const b = args[i];
 
-            if (typeof b === "object" && b !== null && b !== undefined
-                && typeof a === "object" && a !== null && a !== undefined) {
+            if (typeof b === "object" && b !== null && typeof b !== "undefined"
+                && typeof a === "object" && a !== null && typeof a !== "undefined") {
                 for (let key in b) {
                     if (b.hasOwnProperty(key)) {
-                        if (recursive && typeof b[key] === "object" && b[key] !== null && b[key] !== undefined) {
+                        if (recursive && typeof b[key] === "object" && b[key] !== null && typeof b[key] !== "undefined") {
                             a[key] = this.extend(a[key], b[key]);
                         } else {
                             a[key] = b[key];
                         }
                     }
                 }
-            } else if (b !== null && b !== undefined) {
+            } else if (b !== null && typeof b !== "undefined") {
                 a = b;
             }
         }
@@ -668,7 +668,7 @@ const Kandybars = {
             }
 
             // Loop on values
-            if (object !== null && object !== undefined) {
+            if (object !== null && typeof object !== "undefined") {
                 if (typeof object.length === "number") {
                     for (let i = 0; i < object.length; i += 1) {
                         let blockContext = object[i];
@@ -809,7 +809,7 @@ const Kandybars = {
             if (typeof result === "function") {
                 result = result.apply(data, args);
             }
-            return result !== undefined && result !== null ? result : "";
+            return typeof result !== "undefined" && result !== null ? result : "";
         });
     },
 
@@ -849,7 +849,7 @@ const Kandybars = {
             const type = typeof value;
 
             if (value !== null
-                && value !== undefined
+                && typeof value !== "undefined"
                 && type !== "string"
                 && type !== "number"
                 && type !== "boolean") {
@@ -893,7 +893,7 @@ const Kandybars = {
             const object = this.resolvePath(path, data, options);
             let result = "";
 
-            if (object !== null && object !== undefined && typeof object === "object") {
+            if (object !== null && typeof object !== "undefined" && typeof object === "object") {
                 result = this.replaceAll(html, object, {
                     parent: {
                         data: data,
@@ -915,7 +915,7 @@ const Kandybars = {
     resolvePath(path, data, options) {
         options = options || {};
 
-        if (typeof path === "string" && data !== null && data !== undefined) {
+        if (typeof path === "string" && data !== null && typeof data !== "undefined") {
             // Look for special vars
             if (options.special && options.special.hasOwnProperty(path)) {
                 return options.special[path];
@@ -962,7 +962,7 @@ const Kandybars = {
                 for (let i = 0; i < depth; i += 1) {
                     let part = parts[i];
 
-                    if (obj === null || obj === undefined) {
+                    if (obj === null || typeof obj === "undefined") {
                         break;
                     }
 
@@ -1018,7 +1018,7 @@ export default Kandybars;
 
 
 // Expose lib to window
-if (window !== undefined && window.Kandybars === undefined) {
+if (typeof window !== "undefined" && typeof window.Kandybars === "undefined") {
     window.Kandybars = Kandybars;
     window.Kandybars.Template = KTemplate;
     window.Kandybars.TemplateInstance = TemplateInstance;
