@@ -41,11 +41,11 @@
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "gulp": "^3.9.1",
-    "gulp-babel": "^7.0.0",
+    "gulp-babel": "^7.0.1",
     "gulp-strip-comments": "^2.5.2",
     "gulp-watch": "^5.0.0",
     "jest": "^21.2.1",
-    "webpack": "^3.8.1",
-    "webpack-dev-server": "^2.9.5"
+    "webpack": "^3.11.0",
+    "webpack-dev-server": "^2.11.1"
   }
 }

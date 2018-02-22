@@ -35,9 +35,6 @@ const paths = {
 };
 
 module.exports = {
-    entry: {
-        bundle: path.join(paths.src, `${Package.name}.js`)
-    },
     devServer: {
         hot: true,
         host: "0.0.0.0",
@@ -45,6 +42,9 @@ module.exports = {
         contentBase: paths.docs,
         publicPath: "/",
         watchContentBase: true
+    },
+    entry: {
+        bundle: path.join(paths.src, `${Package.name}.js`)
     },
     module: {
         rules: [

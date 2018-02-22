@@ -46,7 +46,7 @@ const Template = {};
 const Kandybars = {
     /**
      * The built-in helpers
-     * @type {object}
+     * @type {*}
      */
     helpers: {},
 
