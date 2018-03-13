@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import {Observer} from "jk-observer";
+import Observer from "@jalik/observer";
 import {TemplateInstance} from "./template-instance";
 
 export class Template {

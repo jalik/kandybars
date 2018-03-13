@@ -1016,7 +1016,6 @@ const Kandybars = {
 
 export default Kandybars;
 
-
 // Expose lib to window
 if (typeof window !== "undefined" && typeof window.Kandybars === "undefined") {
     window.Kandybars = Kandybars;

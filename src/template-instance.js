@@ -23,7 +23,7 @@
  */
 
 import Kandybars from "./kandybars";
-import {Observer} from "jk-observer";
+import Observer from "@jalik/observer";
 import {Template} from "./template";
 
 let instanceCount = 0;
