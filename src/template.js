@@ -23,9 +23,9 @@
  */
 
 import Observer from "@jalik/observer";
-import {TemplateInstance} from "./template-instance";
+import TemplateInstance from "./template-instance";
 
-export class Template {
+class Template {
 
     constructor(name, source) {
         if (typeof name !== "string" || name.length < 1) {
@@ -120,3 +120,5 @@ export class Template {
         this.observer.attach("rendered", listener);
     }
 }
+
+export default Template;

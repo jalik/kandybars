@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 
-import {Template as KTemplate, TemplateInstance} from "./template";
 import Patterns from "./patterns";
+import Template from "./template";
+import TemplateInstance from "./template-instance";
 
 const reservedWords = [
     "abstract", "arguments", "boolean", "break", "byte",
@@ -41,7 +42,7 @@ const reservedWords = [
     "while", "with", "yield"
 ];
 
-const Template = {};
+const Templates = {};
 
 const Kandybars = {
     /**
@@ -251,7 +252,7 @@ const Kandybars = {
      * @return {Template}
      */
     getTemplate(name) {
-        return Template[name];
+        return Templates[name];
     },
 
     /**
@@ -259,7 +260,7 @@ const Kandybars = {
      * @returns {object}
      */
     getTemplatesLogic() {
-        return Template;
+        return Templates;
     },
 
     /**
@@ -277,7 +278,7 @@ const Kandybars = {
      * @return {boolean}
      */
     isTemplate(name) {
-        return Template.hasOwnProperty(name) && Template[name] instanceof KTemplate;
+        return Templates.hasOwnProperty(name) && Templates[name] instanceof Template;
     },
 
     /**
@@ -566,7 +567,7 @@ const Kandybars = {
      * @return {Template}
      */
     registerTemplate(name, html) {
-        return Template[name] = new KTemplate(name, html);
+        return Templates[name] = new Template(name, html);
     },
 
     /**
@@ -597,7 +598,7 @@ const Kandybars = {
         const name = `tpl_${Date.now()}`;
 
         // Create and render the template
-        const template = new KTemplate(name, html);
+        const template = new Template(name, html);
         const tpl = template.createInstance(data, options);
         return tpl.render(options);
     },
@@ -1019,7 +1020,7 @@ export default Kandybars;
 // Expose lib to window
 if (typeof window !== "undefined" && typeof window.Kandybars === "undefined") {
     window.Kandybars = Kandybars;
-    window.Kandybars.Template = KTemplate;
+    window.Kandybars.Templates = Template;
     window.Kandybars.TemplateInstance = TemplateInstance;
-    window.Template = Template;
+    window.Templates = Templates;
 }

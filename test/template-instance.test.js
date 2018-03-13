@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-import {Template} from "../src/template";
-import {TemplateInstance} from "../src/template-instance";
+import Template from "../src/template";
+import TemplateInstance from "../src/template-instance";
 
 const templateName = "test";
 const variabletemplateSource = "<div>{{variable}}</div>";

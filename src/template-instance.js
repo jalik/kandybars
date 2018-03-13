@@ -24,12 +24,12 @@
 
 import Kandybars from "./kandybars";
 import Observer from "@jalik/observer";
-import {Template} from "./template";
+import Template from "./template";
 
 let instanceCount = 0;
 const partials = {};
 
-export class TemplateInstance {
+class TemplateInstance {
 
     constructor(template, data, options) {
         instanceCount += 1;
@@ -278,3 +278,5 @@ export class TemplateInstance {
         return tpl;
     }
 }
+
+export default TemplateInstance;
