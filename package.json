@@ -10,7 +10,7 @@
     "template"
   ],
   "author": {
-    "name": "Karl STEIN",
+    "name": "Karl Stein",
     "email": "karl.stein.pro@gmail.com",
     "url": "https://github.com/jalik"
   },
@@ -26,10 +26,10 @@
     "build": "./node_modules/.bin/gulp build",
     "build:prod": "./node_modules/.bin/gulp prepublish",
     "dev": "./node_modules/.bin/webpack-dev-server --hot --watch",
-    "package": "./node_modules/.bin/webpack && ./node_modules/.bin/webpack -p",
+    "package": "./node_modules/.bin/webpack -p",
     "prepare": "npm run build:prod && npm test",
     "prepublishOnly": "npm test",
-    "test": "jest",
+    "test": "./node_modules/.bin/jest",
     "watch": "./node_modules/.bin/gulp watch"
   },
   "dependencies": {
