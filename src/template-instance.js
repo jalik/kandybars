@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+import {extendRecursively as extend} from "@jalik/extend";
 import Kandybars from "./kandybars";
 import Observer from "@jalik/observer";
 import Template from "./template";
@@ -34,7 +35,7 @@ class TemplateInstance {
     constructor(template, data, options) {
         instanceCount += 1;
 
-        options = Kandybars.extend({
+        options = extend({
             events: {},
             helpers: {},
             parent: null,
@@ -140,7 +141,7 @@ class TemplateInstance {
      * @return {*}
      */
     getContext() {
-        return Kandybars.extend({}, this.data, this.template._helpers);
+        return extend({}, this.data, this.template._helpers);
     }
 
     /**
@@ -148,7 +149,7 @@ class TemplateInstance {
      * @return {*}
      */
     getEvents() {
-        return Kandybars.extend({}, this.getTemplate().getEvents(), this.options.events);
+        return extend({}, this.getTemplate().getEvents(), this.options.events);
     }
 
     /**
@@ -156,7 +157,7 @@ class TemplateInstance {
      * @return {*}
      */
     getHelpers() {
-        return Kandybars.extend({}, this.getTemplate().getHelpers(), this.options.helpers);
+        return extend({}, this.getTemplate().getHelpers(), this.options.helpers);
     }
 
     /**
@@ -205,7 +206,7 @@ class TemplateInstance {
      * @return {*|HTMLElement}
      */
     render(options) {
-        options = Kandybars.extend({
+        options = extend({
             events: {},
             helpers: {},
             html: false,

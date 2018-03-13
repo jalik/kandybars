@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/jalik/kandybars.js/issues"
   },
-  "main": "dist/kandybars.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "./node_modules/.bin/gulp build",
     "build:prod": "./node_modules/.bin/gulp prepublish",
@@ -33,11 +33,12 @@
     "watch": "./node_modules/.bin/gulp watch"
   },
   "dependencies": {
+    "@jalik/extend": "^1.0.1",
     "@jalik/observer": "^1.0.2"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
+    "babel-loader": "^7.1.4",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "gulp": "^3.9.1",
@@ -46,6 +47,6 @@
     "gulp-watch": "^5.0.0",
     "jest": "^21.2.1",
     "webpack": "^3.11.0",
-    "webpack-dev-server": "^2.11.1"
+    "webpack-dev-server": "^2.11.2"
   }
 }

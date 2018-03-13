@@ -22,29 +22,15 @@
  * SOFTWARE.
  */
 
+import {extendRecursively as extend} from "@jalik/extend";
+import reservedWords from "./reserved-words";
 import Patterns from "./patterns";
 import Template from "./template";
-import TemplateInstance from "./template-instance";
 
-const reservedWords = [
-    "abstract", "arguments", "boolean", "break", "byte",
-    "case", "catch", "char", "class", "const",
-    "continue", "debugger", "default", "delete", "do",
-    "double", "else", "enum", "eval", "export",
-    "extends", "false", "final", "finally", "float",
-    "for", "function", "goto", "if", "implements",
-    "import", "in", "instanceof", "int", "interface",
-    "let", "long", "native", "new", "null",
-    "package", "private", "protected", "public", "return",
-    "short", "static", "super", "switch", "synchronized",
-    "this", "throw", "throws", "transient", "true",
-    "try", "typeof", "let", "void", "volatile",
-    "while", "with", "yield"
-];
-
-const Templates = {};
+export const Templates = {};
 
 const Kandybars = {
+
     /**
      * The built-in helpers
      * @type {*}
@@ -90,41 +76,6 @@ const Kandybars = {
     exists(name) {
         console.warn("deprecated method Kandybars.exists(), use Kandybars.isTemplate() instead");
         return this.isTemplate(name);
-    },
-
-    /**
-     * Merge objects
-     * @return {*}
-     */
-    extend() {
-        const args = Array.prototype.slice.call(arguments);
-        let recursive = false;
-        let a = args.shift();
-
-        if (typeof a === "boolean") {
-            recursive = a;
-            a = args.shift();
-        }
-
-        for (let i = 0; i < args.length; i += 1) {
-            const b = args[i];
-
-            if (typeof b === "object" && b !== null
-                && typeof a === "object" && a !== null) {
-                for (let key in b) {
-                    if (b.hasOwnProperty(key)) {
-                        if (recursive && typeof b[key] === "object" && b[key] !== null) {
-                            a[key] = this.extend(a[key], b[key]);
-                        } else {
-                            a[key] = b[key];
-                        }
-                    }
-                }
-            } else if (b !== null && typeof b !== "undefined") {
-                a = b;
-            }
-        }
-        return a;
     },
 
     /**
@@ -422,7 +373,7 @@ const Kandybars = {
                     let value = this.parseValue(param[1], data, options);
 
                     if (typeof value === "object" && value !== null) {
-                        params = this.extend({}, value, params);
+                        params = extend({}, value, params);
                     }
                 } else {
                     params[attr] = this.parseValue(param[1], data, options);
@@ -826,11 +777,11 @@ const Kandybars = {
             params = this.parseBlockParams(params, data, options);
 
             // Prepare partial context
-            const context = this.extend({}, data, params);
+            const context = extend({}, data, params);
 
             const value = this.render(name, context, {
                 html: true,
-                parent: this.extend({}, (options || {}).parent, {instance: this}),// fixme this should refer to template instance
+                parent: extend({}, (options || {}).parent, {instance: this}),// fixme this should refer to template instance
                 partial: true
             });
             return value !== null ? value : "";
@@ -1016,11 +967,3 @@ const Kandybars = {
 };
 
 export default Kandybars;
-
-// Expose lib to window
-if (typeof window !== "undefined" && typeof window.Kandybars === "undefined") {
-    window.Kandybars = Kandybars;
-    window.Kandybars.Templates = Template;
-    window.Kandybars.TemplateInstance = TemplateInstance;
-    window.Templates = Templates;
-}
