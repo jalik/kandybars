@@ -222,8 +222,7 @@ var tpl = Kandybars.render('colors', {
 
 ## Changelog
 
-### v0.9.0
-- Uses ES6 import/export syntax
+History of releases is in the [changelog](./CHANGELOG.md).
 
 ## License
 
