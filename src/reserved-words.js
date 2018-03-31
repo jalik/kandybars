@@ -15,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
@@ -23,19 +23,19 @@
  */
 
 const reservedWords = [
-    "abstract", "arguments", "boolean", "break", "byte",
-    "case", "catch", "char", "class", "const",
-    "continue", "debugger", "default", "delete", "do",
-    "double", "else", "enum", "eval", "export",
-    "extends", "false", "final", "finally", "float",
-    "for", "function", "goto", "if", "implements",
-    "import", "in", "instanceof", "int", "interface",
-    "let", "long", "native", "new", "null",
-    "package", "private", "protected", "public", "return",
-    "short", "static", "super", "switch", "synchronized",
-    "this", "throw", "throws", "transient", "true",
-    "try", "typeof", "let", "void", "volatile",
-    "while", "with", "yield"
+  'abstract', 'arguments', 'boolean', 'break', 'byte',
+  'case', 'catch', 'char', 'class', 'const',
+  'continue', 'debugger', 'default', 'delete', 'do',
+  'double', 'else', 'enum', 'eval', 'export',
+  'extends', 'false', 'final', 'finally', 'float',
+  'for', 'function', 'goto', 'if', 'implements',
+  'import', 'in', 'instanceof', 'int', 'interface',
+  'let', 'long', 'native', 'new', 'null',
+  'package', 'private', 'protected', 'public', 'return',
+  'short', 'static', 'super', 'switch', 'synchronized',
+  'this', 'throw', 'throws', 'transient', 'true',
+  'try', 'typeof', 'let', 'void', 'volatile',
+  'while', 'with', 'yield',
 ];
 
 export default reservedWords;

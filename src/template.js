@@ -15,110 +15,113 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
 
-import Observer from "@jalik/observer";
-import TemplateInstance from "./template-instance";
+import Observer from '@jalik/observer';
+import TemplateInstance from './template-instance';
 
 class Template {
-
-    constructor(name, source) {
-        if (typeof name !== "string" || name.length < 1) {
-            throw new Error("Template name must be a string");
-        }
-        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-            throw new Error(`Template name "${name}" is not valid`);
-        }
-        if (typeof source !== "string") {
-            throw new Error("Template source must be a string");
-        }
-
-        this._events = {};
-        this._helpers = {};
-        this._source = source;
-        this.name = name;
-        this.observer = new Observer(this);
-        this.rendered = null;
+  constructor(name, source) {
+    if (typeof name !== 'string' || name.length < 1) {
+      throw new Error('Template name must be a string');
+    }
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+      throw new Error(`Template name "${name}" is not valid`);
+    }
+    if (typeof source !== 'string') {
+      throw new Error('Template source must be a string');
     }
 
-    /**
-     * Creates an instance of the template
-     * @param data
-     * @param options
-     * @return {TemplateInstance}
-     */
-    createInstance(data, options) {
-        return new TemplateInstance(this, data, options);
-    }
+    this.events = {};
+    this.helpers = {};
+    this.name = name;
+    this.observer = new Observer(this);
+    this.rendered = null;
+    this.source = source;
+  }
 
-    /**
-     * Defines events of the template
-     * @param events
-     */
-    events(events) {
-        if (events !== null && typeof events === "object") {
-            for (let action in events) {
-                if (events.hasOwnProperty(action)) {
-                    this._events[action] = events[action];
-                }
-            }
-        }
-    }
+  /**
+   * Creates an instance of the template
+   * @param data
+   * @param options
+   * @return {TemplateInstance}
+   */
+  createInstance(data, options) {
+    return new TemplateInstance(this, data, options);
+  }
 
-    /**
-     * Returns template events
-     * @return {*}
-     */
-    getEvents() {
-        return this._events;
-    }
+  /**
+   * Defines events of the template
+   * @param events
+   */
+  events(events) {
+    if (events !== null && typeof events === 'object') {
+      const keys = Object.keys(events);
+      const keysLength = keys.length;
 
-    /**
-     * Returns template helpers
-     * @return {*}
-     */
-    getHelpers() {
-        return this._helpers;
+      for (let i = 0; i < keysLength; i += 1) {
+        const action = keys[i];
+        this.events[action] = events[action];
+      }
     }
+  }
 
-    /**
-     * Returns template name
-     * @return {string}
-     */
-    getName() {
-        return this.name;
-    }
+  /**
+   * Returns template events
+   * @return {*}
+   */
+  getEvents() {
+    return this.events;
+  }
 
-    /**
-     * Returns template source
-     * @return {string}
-     */
-    getSource() {
-        return this._source;
-    }
+  /**
+   * Returns template helpers
+   * @return {*}
+   */
+  getHelpers() {
+    return this.helpers;
+  }
 
-    /**
-     * Defines helpers of the template
-     * @param helpers
-     */
-    helpers(helpers) {
-        if (helpers !== null && typeof helpers === "object") {
-            for (let key in helpers) {
-                if (helpers.hasOwnProperty(key)) {
-                    this._helpers[key] = helpers[key];
-                }
-            }
-        }
-    }
+  /**
+   * Returns template name
+   * @return {string}
+   */
+  getName() {
+    return this.name;
+  }
 
-    onRendered(listener) {
-        this.observer.attach("rendered", listener);
+  /**
+   * Returns template source
+   * @return {string}
+   */
+  getSource() {
+    return this.source;
+  }
+
+  /**
+   * Defines helpers of the template
+   * @param helpers
+   */
+  helpers(helpers) {
+    if (helpers !== null && typeof helpers === 'object') {
+      const keys = Object.keys(helpers);
+      const keysLength = keys.length;
+
+      for (let i = 0; i < keysLength; i += 1) {
+        const key = keys[i];
+        this.helpers[key] = helpers[key];
+      }
     }
+  }
+
+  onRendered(listener) {
+    this.observer.attach('rendered', listener);
+  }
 }
 
 export default Template;

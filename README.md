@@ -22,29 +22,6 @@ import Kandybars from "kandybars";
 Kandybars.registerTemplate('welcome', '<p>Welcome</p>');
 ```
 
-## Load templates from a file
-
-A single HTML file can contain several <template> tags, you just have to call the **load(url, callback)** method to load all templates in the file.
-The callback is executed when the file has been loaded,in the callback, **this** refers to the **Kandybars** object.
-
-```js
-import Kandybars from "kandybars";
-
-// Load a file
-Kandybars.load('relative/path/to/template', function() {
-    console.log('Template is loaded');
-});
-
-// Load multiple files
-Kandybars.load([
-        'relative/path/to/file1',
-        'relative/path/to/file2',
-        'relative/path/to/file3'
-    ], function() {
-    console.log('Files loaded');
-});
-```
-
 ## Load templates from a string
 
 You can also load templates contained in a string by parsing it.
