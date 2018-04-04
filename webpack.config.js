@@ -24,6 +24,7 @@
 
 const path = require('path');
 const Package = require('./package.json');
+
 const isProd = process.argv.indexOf('-p') !== -1;
 const isHTTPS = process.argv.indexOf('--https') !== -1;
 const filename = Package.name + (isProd ? '.min' : '');
