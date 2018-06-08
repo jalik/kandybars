@@ -24,12 +24,10 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "./node_modules/.bin/gulp build",
-    "build:prod": "./node_modules/.bin/gulp prepublish",
-    "dev": "./node_modules/.bin/webpack-dev-server --hot --watch",
+    "bundle": "npm test && ./node_modules/.bin/webpack -p",
     "lint": "./node_modules/.bin/eslint .",
     "lint-fix": "./node_modules/.bin/eslint --fix .",
-    "package": "./node_modules/.bin/webpack -p",
-    "prepare": "npm run build:prod && npm test",
+    "prepare": "./node_modules/.bin/gulp prepare",
     "prepublishOnly": "npm test",
     "test": "./node_modules/.bin/jest",
     "watch": "./node_modules/.bin/gulp watch"
@@ -57,7 +55,6 @@
     "gulp-watch": "^5.0.0",
     "jest": "^23.1.0",
     "webpack": "^4.12.0",
-    "webpack-cli": "^3.0.3",
-    "webpack-dev-server": "^3.1.4"
+    "webpack-cli": "^3.0.3"
   }
 }
