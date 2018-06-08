@@ -26,26 +26,16 @@ const path = require('path');
 const Package = require('./package.json');
 
 const isProd = process.argv.indexOf('-p') !== -1;
-const isHTTPS = process.argv.indexOf('--https') !== -1;
 const filename = Package.name + (isProd ? '.min' : '');
 
 const paths = {
-  dist: path.join(__dirname, 'aio'),
-  docs: path.join(__dirname, 'docs'),
+  dist: path.join(__dirname, 'bundle'),
   src: path.join(__dirname, 'src'),
 };
 
 module.exports = {
-  devServer: {
-    hot: true,
-    host: '0.0.0.0',
-    port: isHTTPS ? 3443 : 3000,
-    contentBase: paths.docs,
-    publicPath: '/',
-    watchContentBase: true,
-  },
   entry: {
-    bundle: path.join(paths.src, `${Package.name}.js`),
+    bundle: path.join(paths.src, 'index.js'),
   },
   module: {
     rules: [
