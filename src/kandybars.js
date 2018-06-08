@@ -48,6 +48,7 @@ const Kandybars = {
    * @return {Template}
    */
   create(name, source) {
+    // eslint-disable-next-line no-console
     console.warn('deprecated method Kandybars.create(), use Kandybars.registerTemplate() instead');
     return this.registerTemplate(name, source);
   },
@@ -367,6 +368,7 @@ const Kandybars = {
    * @return {Array}
    */
   parseHelperArguments(text, data, options) {
+    // eslint-disable-next-line no-console
     console.warn('deprecated method Kandybars.parseHelperArguments(), use Kandybars.parseBlockArguments() instead');
     return this.parseBlockArguments(text, data, options);
   },
@@ -380,6 +382,7 @@ const Kandybars = {
    * @return {Object}
    */
   parseHelperParams(text, data, options) {
+    // eslint-disable-next-line no-console
     console.warn('deprecated method Kandybars.parseHelperParams(), use Kandybars.parseBlockParams() instead');
     return this.parseBlockParams(text, data, options);
   },
@@ -483,6 +486,7 @@ const Kandybars = {
       throw new Error('Helper callback must be a function');
     }
     if (this.isHelper(name)) {
+      // eslint-disable-next-line no-console
       console.warn(`Helper "${name}" has been defined already`);
     }
     this.helpers[name] = callback;
@@ -802,6 +806,7 @@ const Kandybars = {
    * @return {string}
    */
   replaceVars(source, data, options) {
+    // eslint-disable-next-line no-console
     console.warn('deprecated method Kandybars.replaceVars(), use Kandybars.replaceVariables() instead');
     return this.replaceVariables(source, data, options);
   },
