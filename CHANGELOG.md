@@ -1,4 +1,7 @@
 # Changelog
 
-## UNRELEASED
-- Uses ES6 import/export syntax
+## 0.9.1
+- Updates dependencies
+
+## 0.9.0
+- First release

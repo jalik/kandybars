@@ -2,6 +2,8 @@
 
 A template engine for all purposes.
 
+**Note: This package is currently under development and may change, please do not use in production.**
+
 ## Create a template in HTML
 
 Each template is wrapped in a **template** html tag and referenced by a unique name using the **name** attribute.
