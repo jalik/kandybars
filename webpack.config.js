@@ -25,17 +25,17 @@
 const path = require('path');
 const Package = require('./package.json');
 
-const isProd = process.argv.indexOf('-p') !== -1;
-const filename = Package.name + (isProd ? '.min' : '');
+// Define bundle file name
+const isProduction = process.argv.includes('--mode=production');
+const bundleName = Package.name + (isProduction ? '.min' : '');
 
-const paths = {
-  dist: path.join(__dirname, 'bundle'),
-  src: path.join(__dirname, 'src'),
-};
+// Define paths
+const buildPath = path.resolve(path.join(__dirname, 'bundle'));
+const srcPath = path.resolve(path.join(__dirname, 'src'));
 
 module.exports = {
   entry: {
-    bundle: path.join(paths.src, 'index.js'),
+    bundle: path.join(srcPath, 'index.js'),
   },
   module: {
     rules: [
@@ -48,11 +48,11 @@ module.exports = {
   },
   output: {
     libraryTarget: 'umd',
-    path: paths.dist,
-    filename: `${filename}.js`,
+    path: buildPath,
+    filename: `${bundleName}.js`,
   },
   resolve: {
     extensions: ['.js'],
-    modules: [paths.src, 'node_modules'],
+    modules: [srcPath, 'node_modules'],
   },
 };
