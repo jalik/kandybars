@@ -38,8 +38,8 @@ describe('fetchBlockArguments()', () => {
 
 describe('findBlocks()', () => {
   it('should return "each" blocks', () => {
-    const html = '<ul>{{#each colors}}<li>{{color}}</li>{{/each}}</ul>' +
-      '<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul>';
+    const html = '<ul>{{#each colors}}<li>{{color}}</li>{{/each}}</ul>'
+      + '<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul>';
     expect(Kandybars.findBlocks(html)).toEqual([
       {
         fromIndex: 4,
@@ -59,8 +59,8 @@ describe('findBlocks()', () => {
   });
 
   it('should return only "each" root blocks', () => {
-    const html = '<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>' +
-      '<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>';
+    const html = '<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>'
+      + '<ul>{{#each colors}}<li>{{color}}<ul>{{#each sizes}}<li>{{size}}</li>{{/each}}</ul></li>{{/each}}</ul>';
     expect(Kandybars.findBlocks(html)).toEqual([
       {
         fromIndex: 4,
@@ -184,8 +184,8 @@ describe('replaceBlocks()', () => {
 
   it('should replace separate blocks', () => {
     const data = { a: [{ num: 100 }], b: [{ num: 200 }] };
-    const html = '<ul>{{#each a}}<li>{{num}}</li>{{/each}}</ul>' +
-      '<ul>{{#each b}}<li>{{num}}</li>{{/each}}</ul>';
+    const html = '<ul>{{#each a}}<li>{{num}}</li>{{/each}}</ul>'
+      + '<ul>{{#each b}}<li>{{num}}</li>{{/each}}</ul>';
     const compiled = `<ul><li>${data.a[0].num}</li></ul><ul><li>${data.b[0].num}</li></ul>`;
     expect(Kandybars.replaceBlocks(html, data)).toEqual(compiled);
   });

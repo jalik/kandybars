@@ -683,8 +683,8 @@ const Kandybars = {
         const [cond1, cond2] = html.split('{{else}}');
 
         // Replace variables in condition
-        const condition = test.replace(Patterns.blockArgumentRegExp, (match2, variable) =>
-          this.parseValue(variable, data, options));
+        const condition = test.replace(Patterns.blockArgumentRegExp,
+          (match2, variable) => this.parseValue(variable, data, options));
 
         if (this.evalCondition(condition)) {
           if (typeof cond1 === 'string') {
@@ -719,8 +719,8 @@ const Kandybars = {
   replaceEvals(source, data, options) {
     return source.replace(Patterns.evalBlockRegExp, (match, expression) => {
       // Replace variables in expression
-      const expr = expression.replace(Patterns.blockArgumentRegExp, (match2, variable) =>
-        this.parseValue(variable, data, options));
+      const expr = expression.replace(Patterns.blockArgumentRegExp,
+        (match2, variable) => this.parseValue(variable, data, options));
       const args = this.parseBlockArguments(expr, data, options);
       return this.evalCondition(args.join(' '));
     });
