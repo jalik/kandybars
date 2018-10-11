@@ -26,23 +26,20 @@
     "build": "npx gulp build",
     "lint": "npx eslint .",
     "lint-fix": "npx eslint --fix .",
-    "package": "npm test && npx webpack --mode=production",
     "prepare": "npx gulp prepare",
     "prepublishOnly": "npm test",
     "test": "npx jest",
     "watch": "npx gulp watch"
   },
   "dependencies": {
-    "@jalik/extend": "^1.0.2",
-    "@jalik/observer": "^1.0.3"
+    "@jalik/extend": "^1.0.3",
+    "@jalik/observer": "^1.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",
     "ajv": "^6.5.4",
     "babel-core": "^7.0.0-bridge.0",
-    "babel-loader": "^7.1.4",
-    "babel-polyfill": "^6.26.0",
     "del": "^3.0.0",
     "eslint": "^5.6.1",
     "eslint-config-airbnb": "^17.1.0",
@@ -53,8 +50,6 @@
     "gulp": "^4.0.0",
     "gulp-babel": "^8.0.0",
     "gulp-eslint": "^5.0.0",
-    "jest": "^23.6.0",
-    "webpack": "^4.12.0",
-    "webpack-cli": "^3.0.3"
+    "jest": "^23.6.0"
   }
 }
