@@ -23,7 +23,19 @@
  */
 
 import extend from '@jalik/extend';
-import Patterns from './patterns';
+import {
+  BLOCK_ARGS_REGEX,
+  COMMENT_BLOCK_REGEX,
+  CONTEXT_PATH_REGEX,
+  EVAL_BLOCK_REGEX,
+  HELPER_BLOCK_REGEX,
+  IF_BLOCK_REGEX,
+  PARTIAL_BLOCK_REGEX,
+  TEMPLATE_BLOCK_REGEX,
+  TEMPLATE_TAGS_REGEX,
+  VARIABLE_BLOCK_REGEX,
+  WITH_BLOCK_REGEX,
+} from './patterns';
 import reservedWords from './reserved-words';
 import Template from './template';
 import TemplateInstance from './template-instance';
@@ -275,7 +287,7 @@ const Kandybars = {
    */
   parseTemplates(html) {
     const templates = { length: 0 };
-    const matches = html.match(Patterns.templateRegExp);
+    const matches = html.match(TEMPLATE_BLOCK_REGEX);
 
     for (let i = 0; i < matches.length; i += 1) {
       const template = matches[i];
@@ -291,7 +303,7 @@ const Kandybars = {
       }
 
       // Remove template tags
-      const src = template.replace(Patterns.templateTagsRegExp, '');
+      const src = template.replace(TEMPLATE_TAGS_REGEX, '');
 
       // Register template
       templates[name] = this.registerTemplate(name, src);
@@ -340,7 +352,7 @@ const Kandybars = {
         return newVal;
       }
       // Resolve path
-      if (Patterns.contextPathRegExp.test(newVal)) {
+      if (CONTEXT_PATH_REGEX.test(newVal)) {
         newVal = this.resolvePath(newVal, data, options);
 
         if (typeof newVal === 'string') {
@@ -485,7 +497,7 @@ const Kandybars = {
 
       if (/^[^ ]+ in [^ ]+$/.test(args)) {
         // todo expose context in a variable (ex: each item in items)
-      } else if (Patterns.contextPathRegExp.test(args)) {
+      } else if (CONTEXT_PATH_REGEX.test(args)) {
         object = this.resolvePath(args, data, options);
       }
 
@@ -544,7 +556,7 @@ const Kandybars = {
    * @return {string}
    */
   replaceComments(source) {
-    return source.replace(Patterns.commentBlockRegExp, '');
+    return source.replace(COMMENT_BLOCK_REGEX, '');
   },
 
   /**
@@ -559,12 +571,12 @@ const Kandybars = {
 
     // Very greedy !!
     while (src.indexOf('{{#if') !== -1) {
-      src = src.replace(Patterns.conditionBlockRegExp, (match, test, html) => {
+      src = src.replace(IF_BLOCK_REGEX, (match, test, html) => {
         let result = '';
         const [cond1, cond2] = html.split('{{else}}');
 
         // Replace variables in condition
-        const condition = test.replace(Patterns.blockArgumentRegExp,
+        const condition = test.replace(BLOCK_ARGS_REGEX,
           (match2, variable) => this.parseValue(variable, data, options));
 
         if (this.evalCondition(condition)) {
@@ -598,9 +610,9 @@ const Kandybars = {
    * @return {string}
    */
   replaceEvals(source, data, options) {
-    return source.replace(Patterns.evalBlockRegExp, (match, expression) => {
+    return source.replace(EVAL_BLOCK_REGEX, (match, expression) => {
       // Replace variables in expression
-      const expr = expression.replace(Patterns.blockArgumentRegExp,
+      const expr = expression.replace(BLOCK_ARGS_REGEX,
         (match2, variable) => this.parseValue(variable, data, options));
       const args = this.parseBlockArguments(expr, data, options);
       return this.evalCondition(args.join(' '));
@@ -615,7 +627,7 @@ const Kandybars = {
    * @return {string}
    */
   replaceHelpers(source, data, options) {
-    return source.replace(Patterns.helperBlockRegExp, (match, name, argsString) => {
+    return source.replace(HELPER_BLOCK_REGEX, (match, name, argsString) => {
       const args = this.parseBlockArguments(argsString, data, options);
 
       if (!this.isHelper(name)) {
@@ -641,7 +653,7 @@ const Kandybars = {
    * @return {string}
    */
   replacePartials(source, data, options) {
-    return source.replace(Patterns.partialBlockRegExp, (match, name, paramsString) => {
+    return source.replace(PARTIAL_BLOCK_REGEX, (match, name, paramsString) => {
       const params = this.parseBlockParams(paramsString, data, options);
       const context = extend({}, data, params);
       const value = this.render(name, context, {
@@ -662,7 +674,7 @@ const Kandybars = {
    * @return {string}
    */
   replaceVariables(source, data, options) {
-    return source.replace(Patterns.variableBlockRegExp, (match, varExpr) => {
+    return source.replace(VARIABLE_BLOCK_REGEX, (match, varExpr) => {
       let value = this.resolvePath(varExpr, data, options);
 
       if (value !== null && typeof value !== 'undefined') {
@@ -686,7 +698,7 @@ const Kandybars = {
    * @return {string}
    */
   replaceWith(source, data, options) {
-    return source.replace(Patterns.withBlockRegExp, (match, path, html) => {
+    return source.replace(WITH_BLOCK_REGEX, (match, path, html) => {
       const object = this.resolvePath(path, data, options);
       let result = '';
 
@@ -720,7 +732,7 @@ const Kandybars = {
         return opt.special[newPath];
       }
       // Check if path is valid
-      if (!Patterns.contextPathRegExp.test(newPath)) {
+      if (!CONTEXT_PATH_REGEX.test(newPath)) {
         return null;
       }
       // Return current context
