@@ -26,6 +26,7 @@ import extend from '@jalik/extend';
 import Patterns from './patterns';
 import reservedWords from './reserved-words';
 import Template from './template';
+import TemplateInstance from './template-instance';
 
 const Kandybars = {
   /**
@@ -515,7 +516,7 @@ const Kandybars = {
       throw new Error(`Template "${name}" does not exist`);
     }
     const template = this.getTemplate(name);
-    const tpl = template.createInstance(data, options);
+    const tpl = new TemplateInstance(template, data, options);
     return tpl.render(options);
   },
 
@@ -532,7 +533,7 @@ const Kandybars = {
 
     // Create and render the template
     const template = new Template(name, html);
-    const tpl = template.createInstance(data, options);
+    const tpl = new TemplateInstance(template, data, options);
     return tpl.render(options);
   },
 

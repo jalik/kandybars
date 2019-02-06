@@ -23,16 +23,17 @@
  */
 
 import Observer from '@jalik/observer';
-import TemplateInstance from './template-instance';
 
 class Template {
   constructor(name, source) {
+    // Check template's name
     if (typeof name !== 'string' || name.length < 1) {
       throw new Error('Template name must be a string');
     }
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
       throw new Error(`Template name "${name}" is not valid`);
     }
+    // Check template's source
     if (typeof source !== 'string') {
       throw new Error('Template source must be a string');
     }
@@ -43,16 +44,6 @@ class Template {
     this.observer = new Observer(this);
     this.rendered = null;
     this.source = source;
-  }
-
-  /**
-   * Creates an instance of the template
-   * @param data
-   * @param options
-   * @return {TemplateInstance}
-   */
-  createInstance(data, options) {
-    return new TemplateInstance(this, data, options);
   }
 
   /**
