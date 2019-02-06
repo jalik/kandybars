@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import { extendRecursively as extend } from '@jalik/extend';
+import extend from '@jalik/extend';
 import Patterns from './patterns';
 import reservedWords from './reserved-words';
 import Template from './template';

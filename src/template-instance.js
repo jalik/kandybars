@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import { extendRecursively as extend } from '@jalik/extend';
+import extend from '@jalik/extend';
 import Observer from '@jalik/observer';
 import Kandybars from './kandybars';
 import Template from './template';

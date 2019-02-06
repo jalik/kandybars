@@ -22,13 +22,12 @@
  * SOFTWARE.
  */
 
-import { extend } from '@jalik/extend';
-import Kandybars, { Templates } from './kandybars';
+import extend from '@jalik/extend';
+import Kandybars from './kandybars';
 import Template from './template';
 import TemplateInstance from './template-instance';
 
 export default extend(Kandybars, {
   Template,
-  Templates,
   TemplateInstance,
 });
