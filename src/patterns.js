@@ -23,7 +23,6 @@
  */
 
 export default {
-
   /**
    * Regexp of a block argument
    * @type {RegExp}

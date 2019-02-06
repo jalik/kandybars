@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+/**
+ * JavaScript reserved words.
+ * @type {string[]}
+ */
 const reservedWords = [
   'abstract', 'arguments', 'boolean', 'break', 'byte',
   'case', 'catch', 'char', 'class', 'const',
