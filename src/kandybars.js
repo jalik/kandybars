@@ -42,19 +42,6 @@ const Kandybars = {
   templates: {},
 
   /**
-   * Registers a template
-   * @deprecated
-   * @param name
-   * @param source
-   * @return {Template}
-   */
-  create(name, source) {
-    // eslint-disable-next-line no-console
-    console.warn('deprecated method Kandybars.create(), use Kandybars.registerTemplate() instead');
-    return this.registerTemplate(name, source);
-  },
-
-  /**
    * Returns the value of the condition
    * @param condition
    * @return {*}
@@ -73,18 +60,6 @@ const Kandybars = {
     eval(`kbRes = ( ${expression} );`);
 
     return kbRes;
-  },
-
-  /**
-   * Checks if a template exists
-   * @deprecated
-   * @param name
-   * @return {boolean}
-   */
-  exists(name) {
-    // eslint-disable-next-line
-    console.warn('deprecated method Kandybars.exists(), use Kandybars.isTemplate() instead');
-    return this.isTemplate(name);
   },
 
   /**
@@ -238,73 +213,6 @@ const Kandybars = {
   },
 
   /**
-   * Loads a file
-   * @param url
-   * @param callback
-   */
-  loadFile(url, callback) {
-    // Get file type
-    const fileType = url.substr(url.lastIndexOf('.') + 1);
-
-    // Prepare HTTP request
-    const req = new XMLHttpRequest();
-    // todo return cached version of the URL
-
-    // Error callback
-    req.onerror = (ev) => {
-      if (typeof callback === 'function') {
-        callback.call(this, new Error(`Cannot load file : ${url}`, ev.target.status));
-      }
-    };
-
-    // State changed callback
-    req.onreadystatechange = () => {
-      if (req.readyState === 4) {
-        if (req.status === 200) {
-          switch (fileType) {
-            case 'js':
-              // Evaluate JavaScript
-              // eslint-disable-next-line no-eval
-              eval(req.responseText);
-              break;
-            case 'html':
-            case 'hbml':
-            case 'kbml':
-            case 'tpl':
-              // Get templates from file
-              this.parseTemplates(req.responseText);
-              break;
-            default:
-          }
-          // Execute the callback
-          if (typeof callback === 'function') {
-            callback.call(this, null);
-          }
-        } else if (typeof callback === 'function') {
-          // Execute the callback
-          callback.call(this, new Error(`Cannot load file : ${url}`));
-        }
-      }
-    };
-
-    // Prepare async request
-    req.open('GET', url, true);
-
-    // Avoid browser to parse HTML content
-    switch (fileType) {
-      case 'html':
-      case 'hbml':
-      case 'kbml':
-      case 'tpl':
-        req.overrideMimeType('text/plain');
-        break;
-      default:
-    }
-    // Get file
-    req.send(null);
-  },
-
-  /**
    * Returns block arguments with computed value
    * @example "arg1 arg2 arg3"
    * @param text
@@ -358,34 +266,6 @@ const Kandybars = {
       }
     }
     return params;
-  },
-
-  /**
-   * Returns block arguments with computed value
-   * @deprecated
-   * @param text
-   * @param data
-   * @param options
-   * @return {Array}
-   */
-  parseHelperArguments(text, data, options) {
-    // eslint-disable-next-line no-console
-    console.warn('deprecated method Kandybars.parseHelperArguments(), use Kandybars.parseBlockArguments() instead');
-    return this.parseBlockArguments(text, data, options);
-  },
-
-  /**
-   * Returns block params with computed value
-   * @deprecated
-   * @param text
-   * @param data
-   * @param options
-   * @return {Object}
-   */
-  parseHelperParams(text, data, options) {
-    // eslint-disable-next-line no-console
-    console.warn('deprecated method Kandybars.parseHelperParams(), use Kandybars.parseBlockParams() instead');
-    return this.parseBlockParams(text, data, options);
   },
 
   /**
@@ -796,20 +676,6 @@ const Kandybars = {
       }
       return value !== null && typeof value !== 'undefined' ? value : '';
     });
-  },
-
-  /**
-   * Replaces variable blocks
-   * @deprecated
-   * @param source
-   * @param data
-   * @param options
-   * @return {string}
-   */
-  replaceVars(source, data, options) {
-    // eslint-disable-next-line no-console
-    console.warn('deprecated method Kandybars.replaceVars(), use Kandybars.replaceVariables() instead');
-    return this.replaceVariables(source, data, options);
   },
 
   /**
