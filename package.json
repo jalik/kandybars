@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/jalik/kandybars.js/issues"
   },
-  "main": "dist/index.js",
+  "main": "dist/kandybars.js",
   "scripts": {
     "build": "npx gulp build",
     "lint": "npx eslint .",

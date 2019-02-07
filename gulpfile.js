@@ -35,7 +35,8 @@ const testPath = path.resolve('test');
 // Compile JS files
 gulp.task('build:js', () => gulp.src([
   path.join(srcPath, '**', '*.js'),
-]).pipe(babel())
+])
+  // .pipe(babel())
   .pipe(gulp.dest(buildPath)));
 
 // Compile all files

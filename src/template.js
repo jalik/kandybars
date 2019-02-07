@@ -38,8 +38,8 @@ class Template {
       throw new Error('Template source must be a string');
     }
 
-    this.events = {};
-    this.helpers = {};
+    this._events = {};
+    this._helpers = {};
     this.name = name;
     this.observer = new Observer(this);
     this.rendered = null;
@@ -57,7 +57,7 @@ class Template {
 
       for (let i = 0; i < keysLength; i += 1) {
         const action = keys[i];
-        this.events[action] = events[action];
+        this._events[action] = events[action];
       }
     }
   }
@@ -67,7 +67,7 @@ class Template {
    * @return {*}
    */
   getEvents() {
-    return this.events;
+    return this._events;
   }
 
   /**
@@ -75,7 +75,7 @@ class Template {
    * @return {*}
    */
   getHelpers() {
-    return this.helpers;
+    return this._helpers;
   }
 
   /**
@@ -105,13 +105,17 @@ class Template {
 
       for (let i = 0; i < keysLength; i += 1) {
         const key = keys[i];
-        this.helpers[key] = helpers[key];
+        this._helpers[key] = helpers[key];
       }
     }
   }
 
-  onRendered(listener) {
-    this.observer.attach('rendered', listener);
+  /**
+   * Executes a function when the template is rendered.
+   * @param func
+   */
+  onRendered(func) {
+    this.observer.attach('rendered', func);
   }
 }
 

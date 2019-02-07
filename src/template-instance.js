@@ -81,13 +81,15 @@ class TemplateInstance {
         const parts = eventName.split(' ', 2);
         const action = parts[0];
         let selector = parts[1];
-        const target = selector && node.filter(selector);
+        const target = selector ? node.find(selector) : node;
         let htmlNode;
 
         // Check if root node is the target
         if (target && target.length === 1) {
           htmlNode = target;
           selector = null;
+        } else {
+          htmlNode = node;
         }
 
         ((newAction, newSelector) => {
@@ -128,7 +130,7 @@ class TemplateInstance {
    * @return {*}
    */
   getContext() {
-    return extend({}, this.data, this.template.helpers);
+    return extend({}, this.data, this.template.getHelpers());
   }
 
   /**
@@ -136,7 +138,7 @@ class TemplateInstance {
    * @return {*}
    */
   getEvents() {
-    return extend({}, this.getTemplate().getEvents(), this.options.events);
+    return extend({}, this.template.getEvents(), this.options.events);
   }
 
   /**
@@ -144,7 +146,7 @@ class TemplateInstance {
    * @return {*}
    */
   getHelpers() {
-    return extend({}, this.getTemplate().getHelpers(), this.options.helpers);
+    return extend({}, this.template.getHelpers(), this.options.helpers);
   }
 
   /**
@@ -231,7 +233,7 @@ class TemplateInstance {
           window.jQuery(opt.target).html(tpl);
         }
 
-        const processPartial = function () {
+        const processPartial = function processPartial() {
           const node = window.jQuery(this);
           const partialId = node.attr('data-partial-id');
           const partial = partials[partialId];
