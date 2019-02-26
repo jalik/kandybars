@@ -1,7 +1,10 @@
 # Changelog
 
+## 0.9.4
+- Updates dependencies
+
 ## 0.9.3
-- Distributes files in ES syntax
+- Lib available in ES6+ syntax (see `src` folder) to enable auto-completion in IDEs
 - Updates dependencies
 
 ## 0.9.2

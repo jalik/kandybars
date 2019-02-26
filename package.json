@@ -32,14 +32,14 @@
     "watch": "npx gulp watch"
   },
   "dependencies": {
-    "@jalik/deep-extend": "^1.1.0",
-    "@jalik/extend": "^2.1.0",
-    "@jalik/observer": "^1.1.0"
+    "@jalik/deep-extend": "^1.1.2",
+    "@jalik/extend": "^2.1.2",
+    "@jalik/observer": "^1.1.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.3.3",
-    "@babel/preset-env": "^7.3.1",
-    "ajv": "^6.9.1",
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "ajv": "^6.9.2",
     "babel-core": "^7.0.0-bridge.0",
     "del": "^3.0.0",
     "eslint": "^5.14.1",
