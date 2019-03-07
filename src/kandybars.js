@@ -240,7 +240,9 @@ const Kandybars = {
       let value = this.parseValue(args[i], data, options);
 
       // Unquote string ("test" => test)
-      if (/^(["'])[^\1]+?\1$/.test(value)) {
+      if (value === '""' || value === '\'\'') {
+        value = '';
+      } else if (/^(["'])[^\1]+?\1$/.test(value)) {
         value = value.substring(1, value.length - 1);
       }
       args[i] = value;

@@ -84,11 +84,21 @@ describe('parseBlockArguments()', () => {
   it('should return parsed arguments', () => {
     expect(Kandybars.parseBlockArguments(' "a" true 32 -16 ')).toEqual(['a', true, 32, -16]);
   });
+  it('should not return "" if empty string', () => {
+    expect(Kandybars.parseBlockArguments(' "" true 32 -16 ')).toEqual(['', true, 32, -16]);
+  });
+  it('should not return \'\' if empty string', () => {
+    expect(Kandybars.parseBlockArguments(' \'\' true 32 -16 ')).toEqual(['', true, 32, -16]);
+  });
 });
 
 describe('parseBlockParams()', () => {
   it('should return parsed parameters', () => {
-    expect(Kandybars.parseBlockParams(' a=10 b="test" c=true ')).toEqual({ a: 10, b: 'test', c: true });
+    expect(Kandybars.parseBlockParams(' a=10 b="test" c=true ')).toEqual({
+      a: 10,
+      b: 'test',
+      c: true,
+    });
   });
 });
 
