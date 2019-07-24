@@ -10,5 +10,9 @@
     "import",
     "jest",
     "jsx-a11y"
-  ]
+  ],
+  "rules": {
+    "import/no-cycle": "warn",
+    "no-underscore-dangle": "warn"
+  }
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.6
+- Updates dependencies
+
 ## 0.9.5
 - Fixes function `parseBlockArguments()` returning double quotes instead of empty string
 - Updates dependencies
