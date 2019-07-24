@@ -1,8 +1,12 @@
 # Kandybars
+![GitHub package.json version](https://img.shields.io/github/package-json/v/jalik/kandybars.svg)
+[![Build Status](https://travis-ci.com/jalik/kandybars.svg?branch=master)](https://travis-ci.com/jalik/kandybars)
+![GitHub](https://img.shields.io/github/license/jalik/kandybars.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/jalik/kandybars.svg)
+[![GitHub issues](https://img.shields.io/github/issues/jalik/kandybars.svg)](https://github.com/jalik/kandybars/issues)
+![npm](https://img.shields.io/npm/dt/kandybars.svg)
 
-A template engine for all purposes.
-
-**Note: This package is currently under development and may change, please do not use in production.**
+A template engine based on mustache syntax for all purposes.
 
 ## Create a template in HTML
 
