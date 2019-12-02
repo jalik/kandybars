@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-// const babel = require('gulp-babel');
+const babel = require('gulp-babel');
 const del = require('del');
 const eslint = require('gulp-eslint');
 const gulp = require('gulp');
@@ -35,8 +35,7 @@ const testPath = path.resolve('test');
 // Compile JS files
 gulp.task('build:js', () => gulp.src([
   path.join(srcPath, '**', '*.js'),
-])
-// .pipe(babel())
+]).pipe(babel())
   .pipe(gulp.dest(buildPath)));
 
 // Compile all files
@@ -55,8 +54,8 @@ gulp.task('eslint', () => gulp.src([
   path.join(testPath, '**', '*.js'),
   path.join('!node_modules', '**'),
 ]).pipe(eslint())
-  .pipe(eslint.formatEach()));
-// .pipe(eslint.failAfterError()));
+  .pipe(eslint.formatEach())
+  .pipe(eslint.failAfterError()));
 
 // Prepare files for production
 gulp.task('prepare', gulp.series(
