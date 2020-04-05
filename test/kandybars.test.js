@@ -231,7 +231,7 @@ describe('replaceEvals()', () => {
 
 describe('replaceHelpers()', () => {
   it('should replace helper blocks', () => {
-    Kandybars.registerHelper('lowercase', text => (typeof text === 'string' ? text.toLowerCase() : text));
+    Kandybars.registerHelper('lowercase', (text) => (typeof text === 'string' ? text.toLowerCase() : text));
     const data = { text: 'HELLO' };
     const html = '<div>{{lowercase text}}</div>';
     expect(Kandybars.replaceHelpers(html, data)).toEqual(`<div>${data.text.toLowerCase()}</div>`);
