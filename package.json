@@ -32,9 +32,9 @@
     "watch": "npx gulp watch"
   },
   "dependencies": {
-    "@jalik/deep-extend": "^1.1.6",
-    "@jalik/extend": "^2.1.6",
-    "@jalik/observer": "^1.1.5"
+    "@jalik/deep-extend": "^1.1.7",
+    "@jalik/extend": "^2.1.7",
+    "@jalik/observer": "^1.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.11.1",
