@@ -18,8 +18,8 @@ import {
   WITH_BLOCK_REGEX,
 } from './patterns';
 import reservedWords from './reserved-words';
-import Template from './template';
-import TemplateInstance from './template-instance';
+import Template from './Template';
+import TemplateInstance from './TemplateInstance';
 
 const Kandybars = {
   /**

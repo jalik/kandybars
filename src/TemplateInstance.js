@@ -6,7 +6,7 @@
 import extend from '@jalik/extend';
 import Observer from '@jalik/observer';
 import Kandybars from './kandybars';
-import Template from './template';
+import Template from './Template';
 
 let instanceCount = 0;
 const partials = {};

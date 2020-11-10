@@ -3,8 +3,8 @@
  * Copyright (c) 2020 Karl STEIN
  */
 
-import Template from '../src/template';
-import TemplateInstance from '../src/template-instance';
+import Template from '../src/Template';
+import TemplateInstance from '../src/TemplateInstance';
 
 const templateName = 'test';
 const templateSource = '<div>{{variable}}</div>';

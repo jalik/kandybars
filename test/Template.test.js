@@ -3,7 +3,7 @@
  * Copyright (c) 2020 Karl STEIN
  */
 
-import Template from '../src/template';
+import Template from '../src/Template';
 
 const templateName = 'test';
 const templateSource = '<div>{{variable}}</div>';
