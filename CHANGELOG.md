@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.12
+- Upgraded dependencies
+
 ## 0.9.11
 - Added `esnext` and `sideEffects` in package.json
 - Renamed template.js to Template.js
