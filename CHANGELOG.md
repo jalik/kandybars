@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.13
+- Upgraded dependencies
+
 ## 0.9.12
 - Upgraded dependencies
 
